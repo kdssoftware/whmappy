@@ -15,26 +15,21 @@ func SetupRoutes(app *fiber.App, repo *database.Repository, esiClient *esi.Clien
 		Format: "[${time}] ${status} - ${latency} ${method} ${path}\n",
 	}))
 
-	// --- UPDATED CORS FOR PRODUCTION ---
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "https://dev.wh.cultofmagik.org", // Your frontend domain
+		AllowOrigins: "https://dev.wh.cultofmagik.org",
 		AllowHeaders: "Origin, Content-Type, Accept, X-Character-ID",
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	}))
 
 	api := app.Group("/api")
-
-	// Auth
 	api.Get("/auth/login", handlers.Login)
 	api.Get("/auth/callback", handlers.Callback(repo))
 	api.Get("/auth/me", handlers.GetCurrentUsers(repo))
 	api.Post("/auth/logout", handlers.Logout(repo))
 
-	// Map - Note: Order matters! /all before /:id
 	api.Get("/map/all", handlers.GetAllConnections(repo))
 	api.Get("/map/:id", handlers.GetSystemMap(repo))
 
-	// Navigation & Management
 	api.Post("/waypoint/:system_id", handlers.SetWaypoint(repo, esiClient))
 	api.Patch("/connections/:id", handlers.UpdateConnection(repo))
 	api.Delete("/connections/:id", handlers.DeleteConnection(repo))

@@ -11,7 +11,7 @@ var ctx = context.Background()
 
 func ConnectRedis() *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
-		Addr: os.Getenv("REDIS_URL"), // e.g., "localhost:6379"
+		Addr: os.Getenv("REDIS_URL"),
 	})
 
 	return rdb

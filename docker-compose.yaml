@@ -1,6 +1,5 @@
 
 services:
-  # The Golang Backend
   backend:
     build:
       context: ./backend
@@ -27,7 +26,6 @@ services:
     networks:
       - eve-network
 
-  # PostgreSQL for Primary Storage
   db:
     image: postgres:15-alpine
     container_name: eve-mapper-db

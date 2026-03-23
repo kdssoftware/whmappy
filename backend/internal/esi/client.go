@@ -8,14 +8,12 @@ import (
 	"time"
 )
 
-// Client is the main struct for interacting with EVE ESI
 type Client struct {
 	ClientID   string
 	SecretKey  string
 	HTTPClient *http.Client
 }
 
-// NewClient initializes the ESI client
 func NewClient(clientID, secret string) *Client {
 	return &Client{
 		ClientID:  clientID,
@@ -26,11 +24,10 @@ func NewClient(clientID, secret string) *Client {
 	}
 }
 
-// GetLocation calls /characters/{id}/location/
 func (c *Client) GetLocation(charID int, token string) (int, error) {
 	req, _ := http.NewRequest("GET", fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/location/", charID), nil)
 	req.Header.Set("Authorization", "Bearer "+token)
-	//req.Header.Set("User-Agent", "Your-Alliance-Mapper-v1")
+	req.Header.Set("User-Agent", "WH-Mapper-v2")
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -53,8 +50,6 @@ func (c *Client) GetLocation(charID int, token string) (int, error) {
 }
 
 func (c *Client) SetWaypoint(charID int, destinationID int, token string) error {
-	// ESI Endpoint: POST /ui/autopilot/waypoint/
-	// Params: add_to_beginning=false, clear_other_waypoints=false, destination_id=...
 	url := fmt.Sprintf("https://esi.evetech.net/latest/ui/autopilot/waypoint/?add_to_beginning=false&clear_other_waypoints=false&destination_id=%d", destinationID)
 
 	req, _ := http.NewRequest("POST", url, nil)

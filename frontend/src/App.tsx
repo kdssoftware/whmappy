@@ -24,12 +24,9 @@ function App() {
     setLoading(true);
     try {
       const res = await axios.get(`${BACKEND_URL}/api/map/all`);
-      // res.data.data handles our diagnostic wrapper, res.data handles standard slice
       const raw: Connection[] = res.data.data || res.data || [];
 
-      // DEDUPLICATION: Treating bidirectional jumps as one connection
       const normalized = Object.values(raw.reduce((acc: Record<string, Connection>, curr: Connection) => {
-        // Create a unique key by sorting the IDs: [3000, 3100] is the same as [3100, 3000]
         const key = [curr.source_id, curr.target_id].sort().join('-');
         if (!acc[key]) {
           acc[key] = curr;
@@ -73,7 +70,7 @@ function App() {
         await axios.post(`${BACKEND_URL}/api/auth/logout`, {}, {
           headers: { 'X-Character-ID': user.id.toString() }
         });
-      } catch (e) { console.error("Logout request failed"); }
+      } catch { console.error("Logout request failed"); }
     }
     localStorage.setItem('manuallyLoggedOut', 'true');
     setUser(null);
@@ -108,7 +105,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-200 p-8 font-sans">
-      {/* Header Section */}
       <header className="max-w-6xl mx-auto flex justify-between items-center mb-12 border-b border-slate-800 pb-6">
         <div className="flex items-center gap-3">
           <Database className="text-blue-500" size={32} />
@@ -153,7 +149,6 @@ function App() {
         </div>
       </header>
 
-      {/* Main Map View */}
       <main className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -169,7 +164,6 @@ function App() {
           <div className="grid gap-12">
             {jSpaceRoots.map(wh => (
               <div key={wh.id} className="relative bg-[#111113] p-6 rounded-xl border border-slate-800 shadow-2xl">
-                {/* Wormhole Header */}
                 <div className="flex items-center gap-4 mb-6">
                   <div className="bg-sky-500/10 border border-sky-500/30 px-4 py-2 rounded-lg">
                     <span className="text-[10px] block uppercase font-black text-sky-500 tracking-widest leading-none mb-1">
@@ -182,7 +176,6 @@ function App() {
                   <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-800 to-transparent" />
                 </div>
                 
-                {/* Render recursive connections for this J-system */}
                 <SystemChain 
                   systemId={wh.id} 
                   allConnections={connections} 

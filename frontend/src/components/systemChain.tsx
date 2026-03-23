@@ -19,7 +19,6 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
   const [editSize, setEditSize] = useState("");
   const [editHours, setEditHours] = useState(24);
 
-  // --- Logic Functions ---
   const startEdit = (link: Connection) => {
     setEditingId(link.id);
     setEditSize(link.wh_size);
@@ -53,28 +52,23 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
     } catch (err) { console.error(err); }
   };
 
-  // --- Recursive Guard ---
   if (visited.has(systemId)) return null; 
   const newVisited = new Set(visited).add(systemId);
 
-  // Find all connections where this system is either the Source or the Target
   const links = allConnections.filter(c => c.source_id === systemId || c.target_id === systemId);
 
   return (
     <div className="flex flex-col gap-4 ml-6 border-l border-slate-800 pl-6 mt-2">
       {links.map((link) => {
-        // Determine the "Other Side" of the connection
         const isSource = link.source_id === systemId;
         const otherId = isSource ? link.target_id : link.source_id;
         const otherName = isSource ? link.target_name : link.source_name;
 
-        // Skip if we've already visited the other side in this branch
         if (visited.has(otherId)) return null;
 
         return (
           <div key={link.id} className="relative">
             {editingId === link.id ? (
-              /* EDIT MODE */
               <div className="bg-sky-900 p-3 rounded-lg border border-blue-500/50 flex flex-wrap gap-3 items-center">
                 <select 
                   value={editSize} 
@@ -103,7 +97,6 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
                 </div>
               </div>
             ) : (
-              /* VIEW MODE */
               <>
                 <div className="flex items-center gap-3 mb-2 text-[10px] text-slate-300 font-mono uppercase">
                   <span className="bg-sky-200 border border-slate-700 px-2 py-0.5 rounded text-sky-900 font-bold">{link.wh_size}</span>
@@ -134,7 +127,6 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
               </>
             )}
 
-            {/* Recurse from the other side */}
             <SystemChain 
               systemId={otherId} 
               allConnections={allConnections} 

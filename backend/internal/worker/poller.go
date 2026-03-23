@@ -23,25 +23,20 @@ func StartPoller(repo *database.Repository, esiClient *esi.Client) {
 				continue
 			}
 
-			// 1. Handle first-run case (LastLocation is NULL/nil in DB)
-if char.LastLocation == nil {
-    repo.UpdateLocation(char.ID, currLoc, esiClient)
-    continue
-}
+			if char.LastLocation == nil {
+				repo.UpdateLocation(char.ID, currLoc, esiClient)
+				continue
+			}
 
-			// 2. Safely dereference the pointer for comparison
 			lastLocValue := *char.LastLocation
 
-			// 3. Check if they moved
-if currLoc != lastLocValue {
-    log.Printf("Poller: Jump detected for %s! %d -> %d", char.Name, lastLocValue, currLoc)
-    
-    // Updated: added esiClient as the final argument
-    err = repo.HandleJump(char.ID, lastLocValue, currLoc, esiClient)
-    if err == nil {
-        repo.UpdateLocation(char.ID, currLoc, esiClient)
-    }
-}
+			if currLoc != lastLocValue {
+				log.Printf("Poller: Jump detected for %s! %d -> %d", char.Name, lastLocValue, currLoc)
+				err = repo.HandleJump(char.ID, lastLocValue, currLoc, esiClient)
+				if err == nil {
+					repo.UpdateLocation(char.ID, currLoc, esiClient)
+				}
+			}
 		}
 	}
 }

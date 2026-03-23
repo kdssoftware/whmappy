@@ -11,16 +11,14 @@ import (
 func SetWaypoint(repo *database.Repository, esiClient *esi.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		systemID, _ := strconv.Atoi(c.Params("system_id"))
-		
-		// Get the specific character ID from the request header
+
 		charIDStr := c.Get("X-Character-ID")
 		if charIDStr == "" {
 			return c.Status(400).JSON(fiber.Map{"error": "Missing Character ID header"})
 		}
 
 		charID, _ := strconv.Atoi(charIDStr)
-		
-		// Fetch specifically your character
+
 		char, err := repo.GetCharacter(charID)
 		if err != nil {
 			return c.Status(404).JSON(fiber.Map{"error": "Character not found in database"})

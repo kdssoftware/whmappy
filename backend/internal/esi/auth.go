@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// RefreshToken swaps a Refresh Token for a new Access Token
 func (c *Client) RefreshToken(refreshToken string) (string, error) {
 	endpoint := "https://login.eveonline.com/v2/oauth/token"
 

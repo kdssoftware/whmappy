@@ -14,12 +14,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Login redirects the user to EVE Online SSO
 func Login(c *fiber.Ctx) error {
 	clientID := os.Getenv("ESI_CLIENT_ID")
 	callback := os.Getenv("ESI_CALLBACK_URL")
 	scopes := "esi-location.read_location.v1 esi-ui.write_waypoint.v1"
-	state := "unique-state-string" // In production, use a random string + session
+	state := "unique-state-string" // In production, use a random string + session TODO
 
 	authURL := fmt.Sprintf(
 		"https://login.eveonline.com/v2/oauth/authorize/?response_type=code&redirect_uri=%s&client_id=%s&scope=%s&state=%s",
@@ -39,7 +38,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 			return c.Status(400).SendString("No code provided from CCP")
 		}
 
-		// 1. Swap Code for Tokens
 		formData := url.Values{}
 		formData.Set("grant_type", "authorization_code")
 		formData.Set("code", code)
@@ -61,7 +59,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 		}
 		json.NewDecoder(resp.Body).Decode(&tokenResp)
 
-		// 2. NEW: Get Character ID and Name from EVE SSO Verify
 		verifyReq, _ := http.NewRequest("GET", "https://login.eveonline.com/oauth/verify", nil)
 		verifyReq.Header.Set("Authorization", "Bearer "+tokenResp.AccessToken)
 
@@ -77,7 +74,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 		}
 		json.NewDecoder(verifyResp.Body).Decode(&identity)
 
-		// 3. Save to Database
 		char := models.Character{
 			ID:           identity.CharacterID,
 			Name:         identity.CharacterName,
@@ -92,14 +88,12 @@ func Callback(repo *database.Repository) fiber.Handler {
 			return c.Status(500).SendString("Database error saving character")
 		}
 
-		// 4. Redirect back to React
 		return c.Redirect("https://dev.wh.cultofmagik.org")
 	}
 }
 
 func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		log.Println("hellothere\n")
 		chars, err := repo.GetAllActiveCharacters()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
@@ -112,7 +106,6 @@ func Logout(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		charID := c.Get("X-Character-ID")
 		if charID != "" {
-			// Delete character from DB so they don't auto-login
 			repo.DB.Exec("DELETE FROM characters WHERE id = $1", charID)
 		}
 		return c.SendStatus(200)
