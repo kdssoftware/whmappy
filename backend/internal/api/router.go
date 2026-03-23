@@ -17,7 +17,7 @@ func SetupRoutes(app *fiber.App, repo *database.Repository, esiClient *esi.Clien
 
 	// --- UPDATED CORS FOR PRODUCTION ---
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "https://wh.cultofmagik.org", // Your frontend domain
+		AllowOrigins: "https://dev.wh.cultofmagik.org", // Your frontend domain
 		AllowHeaders: "Origin, Content-Type, Accept, X-Character-ID",
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	}))
