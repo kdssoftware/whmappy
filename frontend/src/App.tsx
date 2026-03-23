@@ -8,7 +8,7 @@ import {
   User as UserIcon, 
   LogIn, 
   StarIcon, 
-  InfoIcon
+  InfoIcon,
 } from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
 import type { Connection } from './types';
@@ -92,16 +92,20 @@ function App() {
     init();
   }, []);
 
+  /**
+   * UPDATED ROOT LOGIC:
+   * Collects every unique J-System (ID >= 31,000,000) from the entire connection list.
+   * This ensures J161628 gets its own root card even if it only connects to J133052.
+   */
   const jSpaceRoots = Array.from(new Map(
     connections
-      .filter(c => c.source_id < 31000000 || c.target_id < 31000000)
-      .map(c => {
-          const jId = c.source_id >= 31000000 ? c.source_id : c.target_id;
-          const jName = c.source_id >= 31000000 ? c.source_name : c.target_name;
-          return { id: jId, name: jName };
-      })
+      .flatMap(c => [
+        { id: c.source_id, name: c.source_name },
+        { id: c.target_id, name: c.target_name }
+      ])
+      .filter(sys => sys.id >= 31000000)
       .map(sys => [sys.id, sys])
-  ).values());
+  ).values()).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-200 p-8 font-sans">
@@ -168,6 +172,7 @@ function App() {
                         <p className="text-xl font-mono font-bold text-white tracking-tighter">
                           {wh.name}
                         </p>
+                        <span className="text-xs text-slate-600 font-mono">({wh.id})</span>
                       </div>
                     </div>
 
@@ -189,15 +194,15 @@ function App() {
                         </span>
                       )}
 
-                        <a 
-                          href={`https://anoik.is/systems/${wh.name}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-slate-500 hover:text-sky-400 transition-colors"
-                          title="View on Anoik.is"
-                        >
-                          <InfoIcon size={16} />
-                        </a>
+                      <a 
+                        href={`https://anoik.is/systems/${wh.name}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-slate-500 hover:text-sky-400 transition-colors ml-1"
+                        title="View on Anoik.is"
+                      >
+                        <InfoIcon size={16} />
+                      </a>
                     </div>
                   </div>
 
@@ -210,8 +215,7 @@ function App() {
                            <span className="text-sm font-black text-sky-400">{route.total_jumps}j</span>
                            <div className="h-3 w-[1px] bg-slate-700" />
                            <div className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
- to{' '}
-                              {route.exit_system}
+                              to {route.exit_system}
                            </div>
                         </div>
                       </div>
