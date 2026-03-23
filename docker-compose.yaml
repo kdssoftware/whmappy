@@ -6,10 +6,10 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=https://api.wh.cultofmagik.org
-        #- VITE_PORT=5175
+        - VITE_PORT=5175
     container_name: eve-mapper-frontend
     ports:
-      - "5175:5173"
+      - "5175:5175"
     networks:
       - eve-network
     restart: always
