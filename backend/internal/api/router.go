@@ -22,12 +22,13 @@ app.Use(logger.New(logger.Config{
 	api.Get("/auth/login", handlers.Login) // ??
 	api.Get("/auth/callback", handlers.Callback(repo))
 
-	// Map
+	api.Get("/map/all", handlers.GetAllConnections(repo))
 	api.Get("/map/:id", handlers.GetSystemMap(repo))
 	
 	// Navigation (Passes both repo and esiClient)
 	api.Post("/waypoint/:system_id", handlers.SetWaypoint(repo, esiClient))
-
+	api.Patch("/connections/:id", handlers.UpdateConnection(repo))
+	api.Delete("/connections/:id", handlers.DeleteConnection(repo))
 	api.Get("/auth/me", handlers.GetCurrentUsers(repo))
 	api.Post("/auth/logout", handlers.Logout(repo))
 }

@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -70,4 +71,26 @@ func (c *Client) SetWaypoint(charID int, destinationID int, token string) error 
 	}
 
 	return nil
+}
+
+func (e *Client) GetSystemName(id int) (string, error) {
+	url := "https://esi.evetech.net/latest/universe/names/"
+	body, _ := json.Marshal([]int{id})
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	var results []struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	json.NewDecoder(resp.Body).Decode(&results)
+
+	if len(results) > 0 {
+		return results[0].Name, nil
+	}
+	return "Unknown System", nil
 }

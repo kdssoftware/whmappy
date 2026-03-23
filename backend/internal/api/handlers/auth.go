@@ -99,6 +99,7 @@ func Callback(repo *database.Repository) fiber.Handler {
 
 func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		log.Println("hellothere\n")
 		chars, err := repo.GetAllActiveCharacters()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})

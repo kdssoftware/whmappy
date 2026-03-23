@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"wh2/internal/esi"
 	"wh2/internal/models"
 
 	"github.com/jmoiron/sqlx"
@@ -36,20 +37,14 @@ func (r *Repository) GetChain(startSystemID int) ([]models.Connection, error) {
 	return links, nil
 }
 
-func (r *Repository) UpdateLocation(charID int, systemID int) error {
-	// 1. Ensure the system exists first (Auto-create if missing)
-	_, err := r.DB.Exec(`
-		INSERT INTO systems (id, name, is_wormhole) 
-		VALUES ($1, $2, $3) 
-		ON CONFLICT (id) DO NOTHING`, 
-		systemID, fmt.Sprintf("Unknown System %d", systemID), false)
-	
-	if err != nil {
+func (r *Repository) UpdateLocation(charID int, systemID int, esiClient *esi.Client) error {
+	// 1. Ensure the system exists (using the helper that fetches the ESI name)
+	if err := r.ensureSystemExists(systemID, esiClient); err != nil {
 		return err
 	}
 
 	// 2. Now update the character location
-	_, err = r.DB.Exec("UPDATE characters SET last_location_id = $1 WHERE id = $2", systemID, charID)
+	_, err := r.DB.Exec("UPDATE characters SET last_location_id = $1 WHERE id = $2", systemID, charID)
 	return err
 }
 
@@ -80,27 +75,35 @@ func (r *Repository) DeleteExpiredLinks() error {
 }
 
 // HandleJump determines if a move was a gate or a wormhole and records it
-func (r *Repository) HandleJump(charID int, fromID int, toID int) error {
-	// 1. Check if this is a standard Stargate jump.
-	// In a real app, you'd query a 'map_solar_system_jumps' table from the EVE SDE.
-	isGate, _ := r.CheckIfGateExists(fromID, toID)
-	if isGate {
-		return nil // It's just a stargate, no need to map it
+func (r *Repository) HandleJump(charID int, fromID int, toID int, esiClient *esi.Client) error {
+	// 1. Ensure BOTH systems exist in the 'systems' table first
+	if err := r.ensureSystemExists(fromID, esiClient); err != nil {
+		return err
+	}
+	if err := r.ensureSystemExists(toID, esiClient); err != nil {
+		return err
 	}
 
-	// 2. If it's not a gate, it's a Wormhole. 
-	// Check if this connection already exists to avoid duplicates
+	// 2. Check if this is a standard Stargate jump
+	isGate, _ := r.CheckIfGateExists(fromID, toID)
+	if isGate {
+		return nil 
+	}
+
+	// 3. Create the Wormhole Connection
 	var exists bool
 	err := r.DB.Get(&exists, "SELECT EXISTS(SELECT 1 FROM connections WHERE source_system_id=$1 AND target_system_id=$2)", fromID, toID)
 	
 	if err == nil && !exists {
-		// 3. Create the new link with a default 24h lifecycle
 		query := `
 			INSERT INTO connections (source_system_id, target_system_id, connection_type, expires_at, created_by_character_id)
 			VALUES ($1, $2, 'wormhole', $3, $4)`
 		
 		expiresAt := time.Now().Add(24 * time.Hour)
 		_, err = r.DB.Exec(query, fromID, toID, expiresAt, charID)
+		if err == nil {
+			log.Printf("Map Updated: Linked %d to %d (WH)", fromID, toID)
+		}
 		return err
 	}
 
@@ -128,5 +131,39 @@ func (r *Repository) SaveCharacter(char models.Character) error {
 			access_token = EXCLUDED.access_token, 
 			refresh_token = EXCLUDED.refresh_token`
 	_, err := r.DB.Exec(query, char.ID, char.Name, char.AccessToken, char.RefreshToken)
+	return err
+}
+
+// Helper to auto-create a system if it doesn't exist
+func (r *Repository) ensureSystemExists(id int, esiClient *esi.Client) error {
+	var exists bool
+	r.DB.Get(&exists, "SELECT EXISTS(SELECT 1 FROM systems WHERE id=$1)", id)
+	if exists {
+		return nil
+	}
+
+	// Not in DB? Fetch the real name from EVE
+	name, err := esiClient.GetSystemName(id)
+	if err != nil {
+		name = fmt.Sprintf("Unknown %d", id)
+	}
+
+	isWormhole := id >= 31000000 && id < 32000000
+	_, err = r.DB.Exec(`
+		INSERT INTO systems (id, name, is_wormhole) 
+		VALUES ($1, $2, $3) 
+		ON CONFLICT (id) DO NOTHING`, 
+		id, name, isWormhole)
+	return err
+}
+
+func (r *Repository) UpdateConnection(id string, whSize string, expiresAt time.Time) error {
+	query := `UPDATE connections SET wh_size = $1, expires_at = $2 WHERE id = $3`
+	_, err := r.DB.Exec(query, whSize, expiresAt, id)
+	return err
+}
+
+func (r *Repository) DeleteConnection(id string) error {
+	_, err := r.DB.Exec("DELETE FROM connections WHERE id = $1", id)
 	return err
 }
