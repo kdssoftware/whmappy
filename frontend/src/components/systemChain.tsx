@@ -12,7 +12,7 @@ type Props = {
   onUpdate?: () => void;
 }
 
-const BACKEND_URL = "https://api.wh.cultofmagik.org";
+const BACKEND_URL = import.meta.env.VITE_API_URL || "https://api.wh.cultofmagik.org";
 
 export const SystemChain: React.FC<Props> = ({ systemId, allConnections, currentUser, visited = new Set(), onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);

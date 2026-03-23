@@ -4,12 +4,14 @@ import { RefreshCw, Database, User as UserIcon, LogIn } from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
 import type { Connection } from './types';
 
-const BACKEND_URL = "https://api.wh.cultofmagik.org";
+const BACKEND_URL = import.meta.env.VITE_API_URL || "https://api.wh.cultofmagik.org";
 
 interface EveUser {
   id: number;
   name: string;
 }
+
+axios.defaults.withCredentials = true;
 
 function App() {
   const [connections, setConnections] = useState<Connection[]>([]);

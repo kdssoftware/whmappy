@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 	"wh2/internal/database"
 	"wh2/internal/models"
 
@@ -87,6 +89,16 @@ func Callback(repo *database.Repository) fiber.Handler {
 			log.Printf("DB Error saving character: %v", err)
 			return c.Status(500).SendString("Database error saving character")
 		}
+		c.Cookie(&fiber.Cookie{
+			Name:     "session_id",
+			Value:    fmt.Sprintf("%d", char.ID),
+			Expires:  time.Now().Add(72 * time.Hour),
+			HTTPOnly: true,              // Prevents JS from stealing the cookie
+			Secure:   true,              // Only sent over HTTPS
+			SameSite: "None",            // Required for cross-domain (api.wh vs wh.)
+			Domain:   "cultofmagik.org", // Share cookie across all subdomains
+			Path:     "/",
+		})
 
 		return c.Redirect("https://dev.wh.cultofmagik.org")
 	}
@@ -94,20 +106,28 @@ func Callback(repo *database.Repository) fiber.Handler {
 
 func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		chars, err := repo.GetAllActiveCharacters()
-		if err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		sessionID := c.Cookies("session_id")
+
+		if sessionID == "" {
+			return c.JSON([]interface{}{}) // Not logged in on this browser
 		}
-		return c.JSON(chars)
+		const sesID, err := strconv.Atoi(sessionID)
+		if sessionID == "" {
+			return c.JSON([]interface{}{})
+		}
+
+		char, err := repo.GetCharacter(sesID)
+		if err != nil {
+			return c.JSON([]interface{}{})
+		}
+
+		return c.JSON([]models.Character{*char})
 	}
 }
 
 func Logout(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		charID := c.Get("X-Character-ID")
-		if charID != "" {
-			repo.DB.Exec("DELETE FROM characters WHERE id = $1", charID)
-		}
+		c.ClearCookie("session_id")
 		return c.SendStatus(200)
 	}
 }
