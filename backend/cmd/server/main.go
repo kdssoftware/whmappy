@@ -12,19 +12,24 @@ import (
 )
 
 func main() {
-	// 1. Init DB
 	db := database.ConnectPostgres()
 	repo := &database.Repository{DB: db}
-
 	esiClient := esi.NewClient(os.Getenv("ESI_CLIENT_ID"), os.Getenv("ESI_SECRET"))
 
-	// 2. Start Background Workers
 	go worker.StartPoller(repo, esiClient)
-	go worker.StartJanitor(repo) // Deletes expired WHs
+	go worker.StartJanitor(repo)
 
-	// 3. Setup API
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		AppName: "Cult of Magik WH Mapper API",
+	})
+
 	api.SetupRoutes(app, repo, esiClient)
 
-	log.Fatal(app.Listen(":"+os.Getenv("PORT")))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Server starting on https://api.wh.cultofmagik.org (port %s)", port)
+	log.Fatal(app.Listen(":" + port))
 }

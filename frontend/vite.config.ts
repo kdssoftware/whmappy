@@ -8,5 +8,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+        allowedHosts: [ "dev.wh.cultofmagik.org" ],
+  }
 })
 

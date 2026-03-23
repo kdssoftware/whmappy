@@ -93,7 +93,7 @@ func Callback(repo *database.Repository) fiber.Handler {
 		}
 
 		// 4. Redirect back to React
-		return c.Redirect("http://localhost:5173")
+		return c.Redirect("https://wh.cultofmagik.org")
 	}
 }
 
