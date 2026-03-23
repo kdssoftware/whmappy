@@ -25,15 +25,16 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<EveUser | null>(null);
 
-  const fetchData = async () => {
+const fetchData = async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${BACKEND_URL}/api/map/all`);
       
-      // Handle the new response structure
-      const raw: Connection[] = res.data.data || [];
+      // FIX: Use res.data.connections because that is what your JSON shows
+      const raw: Connection[] = res.data.connections || [];
       const routes: Record<number, HubRoute[]> = res.data.hub_routes || {};
       
+      // Deduplicate bidirectional jumps into a single "link" object
       const normalized = Object.values(raw.reduce((acc: Record<string, Connection>, curr: Connection) => {
         const key = [curr.source_id, curr.target_id].sort().join('-');
         if (!acc[key]) acc[key] = curr;
@@ -84,13 +85,14 @@ function App() {
     init();
   }, []);
 
-  const jSpaceRoots = Array.from(new Map(
+const jSpaceRoots = Array.from(new Map(
     connections
-      .flatMap(c => [
-        { id: c.source_id, name: c.source_name },
-        { id: c.target_id, name: c.target_name }
-      ])
-      .filter(sys => sys.id >= 31000000)
+      .filter(c => c.source_id < 31000000 || c.target_id < 31000000)
+      .map(c => {
+          const jId = c.source_id >= 31000000 ? c.source_id : c.target_id;
+          const jName = c.source_id >= 31000000 ? c.source_name : c.target_name;
+          return { id: jId, name: jName };
+      })
       .map(sys => [sys.id, sys])
   ).values());
 
