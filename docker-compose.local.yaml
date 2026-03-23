@@ -1,19 +1,29 @@
-
 services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=https://api.wh.cultofmagik.org
-        #- VITE_PORT=5175
+    env_file:
+      - ./frontend/.env.local
     container_name: eve-mapper-frontend
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./frontend
+          target: /app/dist
+          ignore:
+            - node_modules/
     ports:
-      - "5175:5173"
+      - "5175:5175"
     networks:
       - eve-network
     restart: always
   backend:
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend
+          target: /app
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -21,7 +31,7 @@ services:
     ports:
       - "7777:7777"
     env_file:
-      - ./backend/.env
+      - ./backend/.env.local
     depends_on:
       db:
         condition: service_healthy

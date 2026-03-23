@@ -100,7 +100,8 @@ func Callback(repo *database.Repository) fiber.Handler {
 			Path:     "/",
 		})
 
-		return c.Redirect("https://dev.wh.cultofmagik.org")
+	frontendURL := os.Getenv("FRONTEND_URL")
+		return c.Redirect("https://"+frontendURL)
 	}
 }
 

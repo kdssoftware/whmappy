@@ -12,7 +12,7 @@ type Props = {
   onUpdate?: () => void;
 }
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || "https://api.wh.cultofmagik.org";
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777"
 
 export const SystemChain: React.FC<Props> = ({ systemId, allConnections, currentUser, visited = new Set(), onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -117,7 +117,7 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
                   <ArrowRight size={14} className="text-slate-600" />
                   <div className="flex-1">
                     <span className="text-sm font-bold text-slate-100 tracking-wider">
-                      {otherName} <span className="text-[10px] text-slate-500 font-normal ml-1">({otherId})</span>
+                      {otherName}
                     </span>
                   </div>
                   <button onClick={() => setWaypoint(otherId)} className="p-2 hover:bg-blue-500/20 text-blue-500 rounded-md">

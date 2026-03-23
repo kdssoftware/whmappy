@@ -13,8 +13,8 @@ export type Connection ={
   wh_size: string;
   custom_name?: string;
   expires_at: string; // ISO String
-target_name: string;
-source_name: string;
+  target_name: string;
+  source_name: string;
 }
 
 export interface MapNode extends System {

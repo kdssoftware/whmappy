@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
+import anoikDataRaw from './anoik.json';
+import type { Anoik } from './anoik';
 import axios from 'axios';
-import { RefreshCw, Database, User as UserIcon, LogIn, Map as MapIcon } from 'lucide-react';
+import { 
+  RefreshCw, 
+  Database, 
+  User as UserIcon, 
+  LogIn, 
+  StarIcon, 
+  InfoIcon
+} from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
 import type { Connection } from './types';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || "https://api.wh.cultofmagik.org";
+const anoikData = anoikDataRaw as unknown as Anoik;
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777"
 
 interface EveUser {
   id: number;
@@ -25,16 +35,13 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<EveUser | null>(null);
 
-const fetchData = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${BACKEND_URL}/api/map/all`);
-      
-      // FIX: Use res.data.connections because that is what your JSON shows
       const raw: Connection[] = res.data.connections || [];
       const routes: Record<number, HubRoute[]> = res.data.hub_routes || {};
       
-      // Deduplicate bidirectional jumps into a single "link" object
       const normalized = Object.values(raw.reduce((acc: Record<string, Connection>, curr: Connection) => {
         const key = [curr.source_id, curr.target_id].sort().join('-');
         if (!acc[key]) acc[key] = curr;
@@ -85,7 +92,7 @@ const fetchData = async () => {
     init();
   }, []);
 
-const jSpaceRoots = Array.from(new Map(
+  const jSpaceRoots = Array.from(new Map(
     connections
       .filter(c => c.source_id < 31000000 || c.target_id < 31000000)
       .map(c => {
@@ -146,34 +153,71 @@ const jSpaceRoots = Array.from(new Map(
             {jSpaceRoots.map(wh => (
               <div key={wh.id} className="relative bg-[#111113] p-6 rounded-xl border border-slate-800 shadow-2xl">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
-                  {/* WH INFO */}
-                  <div className="bg-sky-500/10 border border-sky-500/30 px-4 py-2 rounded-lg inline-block">
-                  { wh.id === 31000302 && (<span className="text-[10px] block uppercase font-black text-sky-500 tracking-widest leading-none mb-1">
-                                           Home
-                    </span>)}
-                    <p className="text-xl font-mono font-bold text-white tracking-tighter">
-                      {wh.name} <span className="text-xs text-slate-600 ml-1">({wh.id})</span>
-                    </p>
+                  {/* WH INFO SECTION */}
+                  <div className="flex flex-col gap-2">
+                    <div className="bg-sky-500/10 border border-sky-500/30 px-4 py-2 rounded-lg inline-block">
+                      <div className="flex items-center gap-2 mb-1">
+                          { wh.id === 31000302 && (<span className="text-[10px] block uppercase font-black text-sky-500 tracking-widest leading-none">Home</span>)}
+                          {anoikData.systems[wh.name] && (
+                            <span className="bg-sky-500 text-[9px] text-black px-1.5 py-0.5 rounded font-bold">
+                              {anoikData.systems[wh.name].wormholeClass}
+                            </span>
+                          )}
+                      </div>
+                      <div className="flex items-center">
+                        <p className="text-xl font-mono font-bold text-white tracking-tighter">
+                          {wh.name}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* STATICS & EFFECTS ROW */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {anoikData.systems[wh.name]?.statics?.map(staticCode => {
+                        const staticInfo = anoikData.wormholes[staticCode];
+                        return (
+                          <span key={staticCode} className="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700 font-mono">
+                            Static <strong className="text-slate-200">{staticCode}</strong> 
+                            <span className="ml-1 opacity-60">({staticInfo?.dest || '???'})</span>
+                          </span>
+                        );
+                      })}
+                      
+                      {anoikData.systems[wh.name]?.effectName && (
+                        <span className="text-[10px] bg-purple-900/30 text-purple-400 px-2 py-1 rounded border border-purple-500/30 font-bold uppercase tracking-tighter flex items-center gap-1">
+                          <StarIcon size={12} fill="currentColor" /> {anoikData.systems[wh.name].effectName}
+                        </span>
+                      )}
+
+                        <a 
+                          href={`https://anoik.is/systems/${wh.name}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-slate-500 hover:text-sky-400 transition-colors"
+                          title="View on Anoik.is"
+                        >
+                        </a>
+                    </div>
                   </div>
 
                   {/* HUB NAVIGATION BADGES */}
                   <div className="flex flex-wrap gap-2 md:justify-end">
-                    {hubRoutes[wh.id]?.map((route) => (
+                    {hubRoutes[wh.id]?.sort((a,b)=>a.total_jumps - b.total_jumps).map((route) => (
                       <div key={route.hub_name} className="bg-slate-900 border border-slate-800 p-2 rounded-md min-w-[100px] flex flex-col items-center justify-center border-b-2 border-b-sky-500/50">
                         <span className="text-[9px] uppercase font-black text-slate-500 tracking-tighter mb-1">{route.hub_name}</span>
                         <div className="flex items-center gap-1.5">
                            <span className="text-sm font-black text-sky-400">{route.total_jumps}j</span>
                            <div className="h-3 w-[1px] bg-slate-700" />
                            <div className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
-                              <MapIcon size={10} className="text-slate-600" />
+ to{' '}
                               {route.exit_system}
                            </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-                
+                </div> 
+
                 <SystemChain 
                   systemId={wh.id} 
                   allConnections={connections} 
