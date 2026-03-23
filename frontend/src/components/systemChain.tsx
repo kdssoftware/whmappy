@@ -100,8 +100,8 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
               <>
                 <div className="flex items-center gap-3 mb-2 text-[10px] text-slate-300 font-mono uppercase">
                   <span className="bg-sky-200 border border-slate-700 px-2 py-0.5 rounded text-sky-900 font-bold">{link.wh_size}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock size={10} />
+                  <span className="flex items-center gap-1 text-lg">
+                    <Clock size={14} />
                     {formatDistanceToNow(new Date(link.expires_at))}
                   </span>
                   {currentUser && (

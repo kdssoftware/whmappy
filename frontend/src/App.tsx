@@ -172,7 +172,6 @@ function App() {
                         <p className="text-xl font-mono font-bold text-white tracking-tighter">
                           {wh.name}
                         </p>
-                        <span className="text-xs text-slate-600 font-mono">({wh.id})</span>
                       </div>
                     </div>
 
