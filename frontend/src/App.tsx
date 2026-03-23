@@ -4,7 +4,7 @@ import { RefreshCw, Database, User as UserIcon, LogIn } from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
 import type { Connection } from './types';
 
-const BACKEND_URL = "http://localhost:8080";
+const BACKEND_URL = "https://dev.wh.cultofmagik.org";
 
 interface EveUser {
   id: number;

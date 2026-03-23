@@ -11,5 +11,5 @@ FROM alpine:latest
 WORKDIR /
 COPY --from=builder /server /server
 # Expose the port your Fiber app is listening on
-EXPOSE 8080
+EXPOSE 7777
 CMD ["/server"]

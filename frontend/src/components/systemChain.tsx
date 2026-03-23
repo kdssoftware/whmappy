@@ -12,7 +12,7 @@ type Props = {
   onUpdate?: () => void;
 }
 
-const BACKEND_URL = "http://localhost:8080";
+const BACKEND_URL = "https://dev.wh.cultofmagik.org";
 
 export const SystemChain: React.FC<Props> = ({ systemId, allConnections, currentUser, visited = new Set(), onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
