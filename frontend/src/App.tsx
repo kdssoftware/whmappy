@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { RefreshCw, Database, User as UserIcon, LogIn } from 'lucide-react';
+import { RefreshCw, Database, User as UserIcon, LogIn, Map as MapIcon } from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
 import type { Connection } from './types';
 
@@ -11,32 +11,37 @@ interface EveUser {
   name: string;
 }
 
+interface HubRoute {
+  hub_name: string;
+  total_jumps: number;
+  exit_system: string;
+}
+
 axios.defaults.withCredentials = true;
 
 function App() {
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [hubRoutes, setHubRoutes] = useState<Record<number, HubRoute[]>>({});
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<EveUser | null>(null);
 
-  /**
-   * Fetches all active connections and deduplicates them.
-   * If A -> B and B -> A both exist, they are treated as one single link.
-   */
   const fetchData = async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${BACKEND_URL}/api/map/all`);
-      const raw: Connection[] = res.data.data || res.data || [];
-
+      
+      // Handle the new response structure
+      const raw: Connection[] = res.data.data || [];
+      const routes: Record<number, HubRoute[]> = res.data.hub_routes || {};
+      
       const normalized = Object.values(raw.reduce((acc: Record<string, Connection>, curr: Connection) => {
         const key = [curr.source_id, curr.target_id].sort().join('-');
-        if (!acc[key]) {
-          acc[key] = curr;
-        }
+        if (!acc[key]) acc[key] = curr;
         return acc;
       }, {}));
 
       setConnections(normalized as Connection[]);
+      setHubRoutes(routes);
     } catch (err) {
       console.error("Map fetch error:", err);
     } finally {
@@ -44,23 +49,15 @@ function App() {
     }
   };
 
-  /**
-   * Fetches the current logged-in character from the backend
-   */
   const fetchUser = async () => {
     try {
       const res = await axios.get(`${BACKEND_URL}/api/auth/me`);
-      if (res.data && res.data.length > 0) {
-        setUser(res.data[0]); 
-      }
+      if (res.data && res.data.length > 0) setUser(res.data[0]); 
     } catch (err) {
       console.error("Auth check error:", err);
     }
   };
 
-  /**
-   * Auth Handlers
-   */
   const handleLogin = () => {
     localStorage.removeItem('manuallyLoggedOut');
     window.location.href = `${BACKEND_URL}/api/auth/login`;
@@ -78,23 +75,15 @@ function App() {
     setUser(null);
   };
 
-  // Initial Load
   useEffect(() => {
     const init = async () => {
       const isLoggedOut = localStorage.getItem('manuallyLoggedOut');
-      if (isLoggedOut !== 'true') {
-        await fetchUser();
-      }
+      if (isLoggedOut !== 'true') await fetchUser();
       await fetchData();
     };
     init();
   }, []);
 
-  /**
-   * ROOT LOGIC:
-   * We want to show the Wormhole (J-space) systems as the primary entry points.
-   * A J-space system is defined by an ID >= 31,000,000.
-   */
   const jSpaceRoots = Array.from(new Map(
     connections
       .flatMap(c => [
@@ -103,7 +92,7 @@ function App() {
       ])
       .filter(sys => sys.id >= 31000000)
       .map(sys => [sys.id, sys])
-  ).values()).filter((v,i,a)=>a.findIndex(_v=>_v.id===v.id)===i);
+  ).values());
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-200 p-8 font-sans">
@@ -117,11 +106,7 @@ function App() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button 
-            onClick={fetchData} 
-            className="p-2 text-slate-400 hover:text-white transition-colors"
-            title="Refresh Network"
-          >
+          <button onClick={fetchData} className="p-2 text-slate-400 hover:text-white transition-colors">
             <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
           </button>
 
@@ -131,21 +116,13 @@ function App() {
                 <UserIcon size={16} className="text-blue-400" />
                 <span className="text-sm font-medium text-slate-300">{user.name}</span>
               </div>
-              <button 
-                onClick={handleLogout}
-                className="p-2 text-slate-500 hover:text-red-400 transition-all"
-                title="Logout"
-              >
+              <button onClick={handleLogout} className="p-2 text-slate-500 hover:text-red-400 transition-all">
                 <LogIn size={18} className="rotate-180" />
               </button>
             </div>
           ) : (
-            <button 
-              onClick={handleLogin}
-              className="flex items-center gap-2 bg-[#f39c12] hover:bg-[#e67e22] text-black px-4 py-2 rounded font-bold text-sm transition-all shadow-[0_0_15px_rgba(243,156,18,0.3)]"
-            >
-              <LogIn size={18} />
-              LOGIN WITH ESI
+            <button onClick={handleLogin} className="flex items-center gap-2 bg-[#f39c12] hover:bg-[#e67e22] text-black px-4 py-2 rounded font-bold text-sm transition-all">
+              <LogIn size={18} /> LOGIN WITH ESI
             </button>
           )}
         </div>
@@ -166,16 +143,33 @@ function App() {
           <div className="grid gap-12">
             {jSpaceRoots.map(wh => (
               <div key={wh.id} className="relative bg-[#111113] p-6 rounded-xl border border-slate-800 shadow-2xl">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-sky-500/10 border border-sky-500/30 px-4 py-2 rounded-lg">
-                    <span className="text-[10px] block uppercase font-black text-sky-500 tracking-widest leading-none mb-1">
-                      Wormhole Space
-                    </span>
+                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+                  {/* WH INFO */}
+                  <div className="bg-sky-500/10 border border-sky-500/30 px-4 py-2 rounded-lg inline-block">
+                  { wh.id === 31000302 && (<span className="text-[10px] block uppercase font-black text-sky-500 tracking-widest leading-none mb-1">
+                                           Home
+                    </span>)}
                     <p className="text-xl font-mono font-bold text-white tracking-tighter">
                       {wh.name} <span className="text-xs text-slate-600 ml-1">({wh.id})</span>
                     </p>
                   </div>
-                  <div className="h-[1px] flex-1 bg-gradient-to-r from-slate-800 to-transparent" />
+
+                  {/* HUB NAVIGATION BADGES */}
+                  <div className="flex flex-wrap gap-2 md:justify-end">
+                    {hubRoutes[wh.id]?.map((route) => (
+                      <div key={route.hub_name} className="bg-slate-900 border border-slate-800 p-2 rounded-md min-w-[100px] flex flex-col items-center justify-center border-b-2 border-b-sky-500/50">
+                        <span className="text-[9px] uppercase font-black text-slate-500 tracking-tighter mb-1">{route.hub_name}</span>
+                        <div className="flex items-center gap-1.5">
+                           <span className="text-sm font-black text-sky-400">{route.total_jumps}j</span>
+                           <div className="h-3 w-[1px] bg-slate-700" />
+                           <div className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
+                              <MapIcon size={10} className="text-slate-600" />
+                              {route.exit_system}
+                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 
                 <SystemChain 
@@ -188,14 +182,9 @@ function App() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4">
-            <Database className="text-slate-800" size={48} />
-            <div className="max-w-xs">
-              <p className="text-slate-500 font-medium">No active wormholes detected in the network.</p>
-              <p className="text-xs text-slate-600 mt-1 italic">
-                {user ? `Go find some holes, ${user.name.split(' ')[0]}!` : "Login and undock to start mapping."}
-              </p>
-            </div>
+          <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4 text-slate-500">
+            <Database size={48} />
+            <p>No active wormholes detected.</p>
           </div>
         )}
       </main>

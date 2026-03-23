@@ -28,7 +28,7 @@ func SetupRoutes(app *fiber.App, repo *database.Repository, esiClient *esi.Clien
 	api.Get("/auth/me", handlers.GetCurrentUsers(repo))
 	api.Post("/auth/logout", handlers.Logout(repo))
 
-	api.Get("/map/all", handlers.GetAllConnections(repo))
+	api.Get("/map/all", handlers.GetAllConnections(repo, esiClient))
 	api.Get("/map/:id", handlers.GetSystemMap(repo))
 
 	api.Post("/waypoint/:system_id", handlers.SetWaypoint(repo, esiClient))

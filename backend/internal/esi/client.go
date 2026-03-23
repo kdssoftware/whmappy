@@ -89,3 +89,37 @@ func (e *Client) GetSystemName(id int) (string, error) {
 	}
 	return "Unknown System", nil
 }
+
+func (c *Client) GetRouteDistance(fromID, toID int) (int, error) {
+	url := fmt.Sprintf("https://esi.evetech.net/latest/route/%d/%d/?datasource=tranquility&flag=shortest", fromID, toID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("User-Agent", "WH-Mapper-v2")
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusNotFound {
+			return 999, nil
+		}
+		return 0, fmt.Errorf("ESI route error status: %d", resp.StatusCode)
+	}
+
+	var path []int
+	if err := json.NewDecoder(resp.Body).Decode(&path); err != nil {
+		return 0, err
+	}
+
+	if len(path) <= 1 {
+		return 0, nil
+	}
+
+	return len(path) - 1, nil
+}
