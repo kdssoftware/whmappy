@@ -95,7 +95,7 @@ function App() {
    * We want to show the Wormhole (J-space) systems as the primary entry points.
    * A J-space system is defined by an ID >= 31,000,000.
    */
-  const jSpaceRoots = Array.from(new Map(
+  const jSpaceRoots = new Set(Array.from(new Map(
     connections
       .flatMap(c => [
         { id: c.source_id, name: c.source_name },
@@ -103,7 +103,7 @@ function App() {
       ])
       .filter(sys => sys.id >= 31000000)
       .map(sys => [sys.id, sys])
-  ).values());
+  ).values())).values()
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-200 p-8 font-sans">
