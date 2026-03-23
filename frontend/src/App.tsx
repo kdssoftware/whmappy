@@ -103,7 +103,7 @@ function App() {
       ])
       .filter(sys => sys.id >= 31000000)
       .map(sys => [sys.id, sys])
-  ).values()).filter((v,i,a)=>a.findIndex(_v=>_v.id===v.id)!==i);
+  ).values()).filter((v,i,a)=>a.findIndex(_v=>_v.id===v.id)===i);
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-200 p-8 font-sans">
