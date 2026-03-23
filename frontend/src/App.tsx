@@ -164,7 +164,7 @@ function App() {
                             </span>
                           )}
                       </div>
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-3">
                         <p className="text-xl font-mono font-bold text-white tracking-tighter">
                           {wh.name}
                         </p>
@@ -196,6 +196,7 @@ function App() {
                           className="text-slate-500 hover:text-sky-400 transition-colors"
                           title="View on Anoik.is"
                         >
+                          <InfoIcon size={16} />
                         </a>
                     </div>
                   </div>
