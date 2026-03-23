@@ -111,7 +111,9 @@ func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 		if sessionID == "" {
 			return c.JSON([]interface{}{}) // Not logged in on this browser
 		}
-		const sesID, err := strconv.Atoi(sessionID)
+
+ 		sesID, err := strconv.Atoi(sessionID)
+
 		if sessionID == "" {
 			return c.JSON([]interface{}{})
 		}
