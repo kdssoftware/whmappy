@@ -1,0 +1,55 @@
+
+services:
+  # The Golang Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eve-mapper-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - eve-network
+
+  # Redis for ESI Caching
+  redis:
+    image: redis:7-alpine
+    container_name: eve-mapper-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - eve-network
+
+  # PostgreSQL for Primary Storage
+  db:
+    image: postgres:15-alpine
+    container_name: eve-mapper-db
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+      - POSTGRES_DB=${DB_NAME:-eve_mapper}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-eve_mapper}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eve-network
+
+networks:
+  eve-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
