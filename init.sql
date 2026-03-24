@@ -28,8 +28,6 @@ CREATE TABLE IF NOT EXISTS connections (
     created_by_character_id INTEGER REFERENCES characters(id) ON DELETE SET NULL
 );
 
--- Seed a few systems so the foreign keys don't fail immediately
--- You'll eventually want to import the full EVE SDE here.
 INSERT INTO systems (id, name, security_status, is_wormhole) VALUES 
 (30000142, 'Jita', 0.9, false),
 (30002187, 'Amarr', 1.0, false),
