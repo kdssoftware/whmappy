@@ -9,6 +9,8 @@ import {
   LogIn, 
   StarIcon, 
   InfoIcon,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
 import type { Connection } from './types';
@@ -24,7 +26,9 @@ interface EveUser {
 interface HubRoute {
   hub_name: string;
   total_jumps: number;
+  total_safe_jumps?: number;
   exit_system: string;
+  safe_exit_system?: string;
 }
 
 axios.defaults.withCredentials = true;
@@ -93,9 +97,9 @@ function App() {
   }, []);
 
   /**
-   * UPDATED ROOT LOGIC:
-   * Collects every unique J-System (ID >= 31,000,000) from the entire connection list.
-   * This ensures J161628 gets its own root card even if it only connects to J133052.
+   * FIX: UNIQUE WORMHOLE ROOT LOGIC
+   * We now take EVERY system from EVERY connection that is a J-System.
+   * This ensures J212906 and J133052 both get their own root cards.
    */
   const jSpaceRoots = Array.from(new Map(
     connections
@@ -134,7 +138,7 @@ function App() {
               </button>
             </div>
           ) : (
-            <button onClick={handleLogin} className="flex items-center gap-2 bg-[#f39c12] hover:bg-[#e67e22] text-black px-4 py-2 rounded font-bold text-sm transition-all">
+            <button onClick={handleLogin} className="flex items-center gap-2 bg-[#f39c12] hover:bg-[#e67e22] text-black px-4 py-2 rounded font-bold text-sm transition-all shadow-[0_0_15px_rgba(243,156,18,0.2)]">
               <LogIn size={18} /> LOGIN WITH ESI
             </button>
           )}
@@ -145,10 +149,10 @@ function App() {
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
             <div className="w-2 h-2 bg-sky-500 rounded-full animate-pulse" />
-            Active Wormholes
+            Active Network
           </h2>
-          <span className="text-xs text-slate-600 bg-slate-900 px-2 py-1 rounded border border-slate-800">
-            {connections.length} Total Connections
+          <span className="text-xs text-slate-600 bg-slate-900 px-2 py-1 rounded border border-slate-800 font-mono">
+            {connections.length} Links Discovery
           </span>
         </div>
         
@@ -156,10 +160,11 @@ function App() {
           <div className="grid gap-12">
             {jSpaceRoots.map(wh => (
               <div key={wh.id} className="relative bg-[#111113] p-6 rounded-xl border border-slate-800 shadow-2xl">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+                <div className="flex flex-col xl:flex-row xl:justify-between xl:items-start gap-6 mb-8">
+                  
                   {/* WH INFO SECTION */}
-                  <div className="flex flex-col gap-2">
-                    <div className="bg-sky-500/10 border border-sky-500/30 px-4 py-2 rounded-lg inline-block">
+                  <div className="flex flex-col gap-3">
+                    <div className="bg-sky-500/10 border border-sky-500/30 px-4 py-2 rounded-lg inline-block self-start">
                       <div className="flex items-center gap-2 mb-1">
                           { wh.id === 31000302 && (<span className="text-[10px] block uppercase font-black text-sky-500 tracking-widest leading-none">Home</span>)}
                           {anoikData.systems[wh.name] && (
@@ -169,18 +174,18 @@ function App() {
                           )}
                       </div>
                       <div className="flex items-center gap-3">
-                        <p className="text-xl font-mono font-bold text-white tracking-tighter">
+                        <p className="text-2xl font-mono font-bold text-white tracking-tighter uppercase">
                           {wh.name}
                         </p>
+                        <span className="text-xs text-slate-600 font-mono">({wh.id})</span>
                       </div>
                     </div>
 
-                    {/* STATICS & EFFECTS ROW */}
                     <div className="flex flex-wrap gap-2 items-center">
                       {anoikData.systems[wh.name]?.statics?.map(staticCode => {
                         const staticInfo = anoikData.wormholes[staticCode];
                         return (
-                          <span key={staticCode} className="text-[10px] bg-slate-800 text-slate-400 px-2 py-1 rounded border border-slate-700 font-mono">
+                          <span key={staticCode} className="text-[10px] bg-slate-800/50 text-slate-400 px-2 py-1 rounded border border-slate-700 font-mono">
                             Static <strong className="text-slate-200">{staticCode}</strong> 
                             <span className="ml-1 opacity-60">({staticInfo?.dest || '???'})</span>
                           </span>
@@ -188,7 +193,7 @@ function App() {
                       })}
                       
                       {anoikData.systems[wh.name]?.effectName && (
-                        <span className="text-[10px] bg-purple-900/30 text-purple-400 px-2 py-1 rounded border border-purple-500/30 font-bold uppercase tracking-tighter flex items-center gap-1">
+                        <span className="text-[10px] bg-purple-900/20 text-purple-400 px-2 py-1 rounded border border-purple-500/30 font-bold uppercase tracking-tighter flex items-center gap-1">
                           <StarIcon size={12} fill="currentColor" /> {anoikData.systems[wh.name].effectName}
                         </span>
                       )}
@@ -197,24 +202,44 @@ function App() {
                         href={`https://anoik.is/systems/${wh.name}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-slate-500 hover:text-sky-400 transition-colors ml-1"
+                        className="text-slate-600 hover:text-sky-400 transition-colors ml-1 p-1 hover:bg-slate-800 rounded"
                         title="View on Anoik.is"
                       >
-                        <InfoIcon size={16} />
+                        <InfoIcon size={18} />
                       </a>
                     </div>
                   </div>
 
                   {/* HUB NAVIGATION BADGES */}
-                  <div className="flex flex-wrap gap-2 md:justify-end">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xl:justify-end">
                     {hubRoutes[wh.id]?.sort((a,b)=>a.total_jumps - b.total_jumps).map((route) => (
-                      <div key={route.hub_name} className="bg-slate-900 border border-slate-800 p-2 rounded-md min-w-[100px] flex flex-col items-center justify-center border-b-2 border-b-sky-500/50">
-                        <span className="text-[9px] uppercase font-black text-slate-500 tracking-tighter mb-1">{route.hub_name}</span>
-                        <div className="flex items-center gap-1.5">
-                           <span className="text-sm font-black text-sky-400">{route.total_jumps}j</span>
-                           <div className="h-3 w-[1px] bg-slate-700" />
-                           <div className="flex items-center gap-1 text-[9px] text-slate-400 font-medium">
-                              to {route.exit_system}
+                      <div key={route.hub_name} className="bg-slate-900/80 border border-slate-800 p-3 rounded-lg min-w-[120px] flex flex-col border-b-2 border-b-sky-500/50 shadow-inner">
+                        <span className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-2 border-b border-slate-800 pb-1">{route.hub_name}</span>
+                        
+                        
+                            <div className="flex flex-col gap-1">
+
+                        { route.total_jumps !== route.total_safe_jumps &&
+                                <div className="flex items-center justify-between gap-2" title="Shortest Route">
+                                <Zap size={10} className="text-orange-700" />
+                                <span className="text-xs font-black text-orange-600">{route.total_jumps}j</span>
+
+                                    <div className="text-[9px] text-slate-500 font-medium truncate">
+                           via {route.exit_system}
+                        </div>
+                           </div>
+                        }
+
+                           <div className="flex items-center justify-between gap-2" title="High-Sec Only Route">
+                              <ShieldCheck size={10} className="text-green-700" />
+                              <span className="text-xs font-black text-green-600">
+                                {route.total_safe_jumps && route.total_safe_jumps > 0 
+                                  ? `${route.total_safe_jumps}j` 
+                                  : <span className="text-slate-600 font-normal italic">N/A</span>}
+                              </span>
+                        <div className="text-[9px] text-slate-500 font-medium truncate">
+                           via {route.safe_exit_system}
+                        </div>
                            </div>
                         </div>
                       </div>
@@ -232,9 +257,9 @@ function App() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4 text-slate-500">
-            <Database size={48} />
-            <p>No active wormholes detected.</p>
+          <div className="text-center py-24 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4 text-slate-600">
+            <Database size={48} className="opacity-20" />
+            <p className="font-mono uppercase tracking-widest text-sm">Waiting for Scan Data...</p>
           </div>
         )}
       </main>

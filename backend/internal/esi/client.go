@@ -90,8 +90,8 @@ func (e *Client) GetSystemName(id int) (string, error) {
 	return "Unknown System", nil
 }
 
-func (c *Client) GetRouteDistance(fromID, toID int) (int, error) {
-	url := fmt.Sprintf("https://esi.evetech.net/latest/route/%d/%d/?datasource=tranquility&flag=shortest", fromID, toID)
+func (c *Client) GetRouteDistance(fromID, toID int, flag string) (int, error) {
+	url := fmt.Sprintf("https://esi.evetech.net/latest/route/%d/%d/?datasource=tranquility&flag=%s", fromID, toID, flag)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

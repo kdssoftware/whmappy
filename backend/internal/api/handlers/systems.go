@@ -61,19 +61,31 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 				bestExit := ""
 
 				for exitID, whJumps := range exits {
-					// Call ESI for route: /v1/route/{exitID}/{hubID}/
-					gateJumps, _ := esiClient.GetRouteDistance(exitID, hubID)
+					gateJumps, _ := esiClient.GetRouteDistance(exitID, hubID, "shortest")
 					total := whJumps + gateJumps
 
 					if total < bestTotal {
 						bestTotal = total
-						// Get Name for the Exit
 						exitName, _ := esiClient.GetSystemName(exitID)
 						bestExit = exitName
 					}
 				}
+
+				bestSafeExit := ""
+				bestSafeTotal := 999
+				for exitID, whJumps := range exits {
+					gateJumps, _ := esiClient.GetRouteDistance(exitID, hubID, "secure")
+					total := whJumps + gateJumps
+
+					if total < bestSafeTotal {
+						bestSafeTotal = total
+						exitName, _ := esiClient.GetSystemName(exitID)
+						bestSafeExit = exitName
+					}
+				}
+
 				if bestExit != "" {
-					results[rootID] = append(results[rootID], HubRoute{hubName, bestTotal, bestExit})
+					results[rootID] = append(results[rootID], HubRoute{hubName, bestTotal, bestExit, bestSafeTotal, bestSafeExit})
 				}
 			}
 		}
@@ -128,9 +140,11 @@ const (
 )
 
 type HubRoute struct {
-	HubName    string `json:"hub_name"`
-	TotalJumps int    `json:"total_jumps"`
-	ExitSystem string `json:"exit_system"`
+	HubName        string `json:"hub_name"`
+	TotalJumps     int    `json:"total_jumps"`
+	ExitSystem     string `json:"exit_system"`
+	TotalSafeJumps int    `json:"total_safe_jumps"`
+	SafeExitSystem string `json:"safe_exit_system"`
 }
 
 // Helper to find all K-space systems reachable from a J-Root via the alliance map
