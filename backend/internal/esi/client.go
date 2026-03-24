@@ -123,3 +123,26 @@ func (c *Client) GetRouteDistance(fromID, toID int, flag string) (int, error) {
 
 	return len(path) - 1, nil
 }
+
+func (c *Client) GetCharacterAlliance(charID int) (int, error) {
+	url := fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/", charID)
+
+	resp, err := c.HTTPClient.Get(url)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("failed to fetch character info: %d", resp.StatusCode)
+	}
+
+	var data struct {
+		AllianceID int `json:"alliance_id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return 0, err
+	}
+
+	return data.AllianceID, nil
+}

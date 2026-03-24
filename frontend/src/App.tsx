@@ -115,7 +115,7 @@ function App() {
     <div className="min-h-screen bg-[#0a0a0c] text-slate-200 p-8 font-sans">
       <header className="max-w-6xl mx-auto flex justify-between items-center mb-12 border-b border-slate-800 pb-6">
         <div className="flex items-center gap-3">
-          <Database className="text-blue-500" size={32} />
+          <img src="https://images.evetech.net/corporations/98818601/logo" alt="logo" className='size-32' />
           <div>
             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none italic">WH Mapper</h1>
             <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">- Cult of Magik</span>
@@ -156,7 +156,7 @@ function App() {
           </span>
         </div>
         
-        {jSpaceRoots.length > 0 ? (
+        {user && jSpaceRoots.length > 0 ? (
           <div className="grid gap-12">
             {jSpaceRoots.map(wh => (
               <div key={wh.id} className="relative bg-[#111113] p-6 rounded-xl border border-slate-800 shadow-2xl">
