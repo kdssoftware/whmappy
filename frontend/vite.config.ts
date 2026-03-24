@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
-        allowedHosts: [ "dev.wh.cultofmagik.org" ],
+        allowedHosts: [ "dev.wh.cultofmagik.org", "wh.cultofmagik.org" ],
   }
 })
 
