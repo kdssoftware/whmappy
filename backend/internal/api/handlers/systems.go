@@ -1,3 +1,5 @@
+// backend/internal/api/handlers/systems.go
+
 package handlers
 
 import (
@@ -35,7 +37,6 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
                   JOIN systems s2 ON c.target_system_id = s2.id`
 		repo.DB.Select(&links, query)
 
-		// 1. Group by J-Roots
 		jRoots := make(map[int]string)
 		for _, l := range links {
 			if l.SourceSystemID >= 31000000 {
@@ -46,7 +47,6 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 			}
 		}
 
-		// 2. For each J-Root, calculate routes
 		results := make(map[int][]HubRoute)
 		hubs := map[string]int{"Jita": Jita, "Amarr": Amarr, "Dodixie": Dodixie, "Hek": Hek}
 
@@ -57,35 +57,44 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 			}
 
 			for hubName, hubID := range hubs {
-				bestTotal := 999
-				bestExit := ""
+				bestShortestTotal := 999
+				bestShortestExit := ""
 
-				for exitID, whJumps := range exits {
-					gateJumps, _ := esiClient.GetRouteDistance(exitID, hubID, "shortest")
-					total := whJumps + gateJumps
-
-					if total < bestTotal {
-						bestTotal = total
-						exitName, _ := esiClient.GetSystemName(exitID)
-						bestExit = exitName
-					}
-				}
-
-				bestSafeExit := ""
 				bestSafeTotal := 999
-				for exitID, whJumps := range exits {
-					gateJumps, _ := esiClient.GetRouteDistance(exitID, hubID, "secure")
-					total := whJumps + gateJumps
+				bestSafeExit := ""
 
-					if total < bestSafeTotal {
-						bestSafeTotal = total
-						exitName, _ := esiClient.GetSystemName(exitID)
-						bestSafeExit = exitName
+				for exitID, whJumps := range exits {
+					// 1. Calculate SHORTEST (Any Sec)
+					gateJumps, err := esiClient.GetRouteDistance(exitID, hubID, "shortest")
+					if err == nil {
+						total := whJumps + gateJumps
+						if total < bestShortestTotal {
+							bestShortestTotal = total
+							name, _ := esiClient.GetSystemName(exitID)
+							bestShortestExit = name
+						}
+					}
+
+					// 2. Calculate SAFE (High-Sec Only)
+					safeGateJumps, err := esiClient.GetRouteDistance(exitID, hubID, "secure")
+					if err == nil && safeGateJumps < 900 { // 999 means no HS route
+						total := whJumps + safeGateJumps
+						if total < bestSafeTotal {
+							bestSafeTotal = total
+							name, _ := esiClient.GetSystemName(exitID)
+							bestSafeExit = name
+						}
 					}
 				}
 
-				if bestExit != "" {
-					results[rootID] = append(results[rootID], HubRoute{hubName, bestTotal, bestExit, bestSafeTotal, bestSafeExit})
+				if bestShortestExit != "" {
+					results[rootID] = append(results[rootID], HubRoute{
+						HubName:        hubName,
+						TotalJumps:     bestShortestTotal,
+						ExitSystem:     bestShortestExit,
+						TotalSafeJumps: bestSafeTotal,
+						SafeExitSystem: bestSafeExit,
+					})
 				}
 			}
 		}

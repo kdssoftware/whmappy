@@ -1,3 +1,4 @@
+// backend/internal/esi/client.go
 package esi
 
 import (
@@ -12,12 +13,14 @@ type Client struct {
 	ClientID   string
 	SecretKey  string
 	HTTPClient *http.Client
+	routeCache map[string]int
 }
 
 func NewClient(clientID, secret string) *Client {
 	return &Client{
-		ClientID:  clientID,
-		SecretKey: secret,
+		ClientID:   clientID,
+		SecretKey:  secret,
+		routeCache: make(map[string]int),
 		HTTPClient: &http.Client{
 			Timeout: time.Second * 10,
 		},
@@ -91,14 +94,13 @@ func (e *Client) GetSystemName(id int) (string, error) {
 }
 
 func (c *Client) GetRouteDistance(fromID, toID int, flag string) (int, error) {
-	url := fmt.Sprintf("https://esi.evetech.net/latest/route/%d/%d/?datasource=tranquility&flag=%s", fromID, toID, flag)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, err
+	cacheKey := fmt.Sprintf("%d-%d-%s", fromID, toID, flag)
+	if dist, ok := c.routeCache[cacheKey]; ok {
+		return dist, nil
 	}
-	req.Header.Set("User-Agent", "WH-Mapper-v2")
 
+	url := fmt.Sprintf("https://esi.evetech.net/latest/route/%d/%d/?datasource=tranquility&flag=%s", fromID, toID, flag)
+	req, _ := http.NewRequest("GET", url, nil)
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return 0, err
@@ -107,21 +109,22 @@ func (c *Client) GetRouteDistance(fromID, toID int, flag string) (int, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
+			c.routeCache[cacheKey] = 999 // No route exists
 			return 999, nil
 		}
-		return 0, fmt.Errorf("ESI route error status: %d", resp.StatusCode)
+		return 0, fmt.Errorf("error %d", resp.StatusCode)
 	}
 
 	var path []int
-	if err := json.NewDecoder(resp.Body).Decode(&path); err != nil {
-		return 0, err
+	json.NewDecoder(resp.Body).Decode(&path)
+
+	dist := 0
+	if len(path) > 1 {
+		dist = len(path) - 1
 	}
 
-	if len(path) <= 1 {
-		return 0, nil
-	}
-
-	return len(path) - 1, nil
+	c.routeCache[cacheKey] = dist
+	return dist, nil
 }
 
 func (c *Client) GetCharacterAlliance(charID int) (int, error) {
