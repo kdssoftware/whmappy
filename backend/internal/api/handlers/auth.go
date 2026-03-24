@@ -16,14 +16,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Cult of Magik Alliance ID
 const TargetAllianceID = 99014712
 
 func Login(c *fiber.Ctx) error {
 	clientID := os.Getenv("ESI_CLIENT_ID")
 	callback := os.Getenv("ESI_CALLBACK_URL")
 	scopes := "esi-location.read_location.v1 esi-ui.write_waypoint.v1"
-	state := "unique-state-string" // In production, use a random string + session
+	state := "unique-state-string" // In production, use a random string + session // TODO
 
 	authURL := fmt.Sprintf(
 		"https://login.eveonline.com/v2/oauth/authorize/?response_type=code&redirect_uri=%s&client_id=%s&scope=%s&state=%s",
@@ -43,7 +42,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 			return c.Status(400).SendString("No code provided from CCP")
 		}
 
-		// 1. Exchange Code for Access Token
 		formData := url.Values{}
 		formData.Set("grant_type", "authorization_code")
 		formData.Set("code", code)
@@ -65,7 +63,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 		}
 		json.NewDecoder(resp.Body).Decode(&tokenResp)
 
-		// 2. Verify Character Identity
 		verifyReq, _ := http.NewRequest("GET", "https://login.eveonline.com/oauth/verify", nil)
 		verifyReq.Header.Set("Authorization", "Bearer "+tokenResp.AccessToken)
 
@@ -81,8 +78,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 		}
 		json.NewDecoder(verifyResp.Body).Decode(&identity)
 
-		// 3. GATEKEEPER: Check Alliance Membership
-		// We fetch the public character info to see their alliance_id
 		allianceURL := fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/", identity.CharacterID)
 		allianceResp, err := http.Get(allianceURL)
 		if err != nil || allianceResp.StatusCode != 200 {
@@ -103,7 +98,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 			})
 		}
 
-		// 4. Success: Save and Set Session
 		char := models.Character{
 			ID:           identity.CharacterID,
 			Name:         identity.CharacterName,
@@ -118,7 +112,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 			return c.Status(500).SendString("Database error saving character")
 		}
 
-		// Set secure, cross-subdomain cookie
 		c.Cookie(&fiber.Cookie{
 			Name:     "session_id",
 			Value:    fmt.Sprintf("%d", char.ID),
@@ -126,7 +119,7 @@ func Callback(repo *database.Repository) fiber.Handler {
 			HTTPOnly: true,
 			Secure:   true,
 			SameSite: "None",
-			Domain:   ".cultofmagik.org", // Allow dev.wh and wh to share
+			Domain:   ".cultofmagik.org",
 			Path:     "/",
 		})
 
@@ -159,7 +152,7 @@ func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 
 func Logout(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		c.ClearCookie("session_id", "session_id") // Pass key twice for cross-domain clearing in some browsers
+		c.ClearCookie("session_id", "session_id")
 		return c.SendStatus(200)
 	}
 }

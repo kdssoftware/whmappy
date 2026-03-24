@@ -96,11 +96,6 @@ function App() {
     init();
   }, []);
 
-  /**
-   * FIX: UNIQUE WORMHOLE ROOT LOGIC
-   * We now take EVERY system from EVERY connection that is a J-System.
-   * This ensures J212906 and J133052 both get their own root cards.
-   */
   const jSpaceRoots = Array.from(new Map(
     connections
       .flatMap(c => [

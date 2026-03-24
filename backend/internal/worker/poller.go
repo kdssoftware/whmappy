@@ -19,7 +19,6 @@ func StartPoller(repo *database.Repository, esiClient *esi.Client) {
 		for _, char := range chars {
 			currLoc, err := esiClient.GetLocation(char.ID, char.AccessToken)
 			if err != nil {
-				// If token is expired, you'd handle RefreshToken here
 				continue
 			}
 

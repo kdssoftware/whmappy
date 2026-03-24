@@ -1,5 +1,3 @@
-// backend/internal/api/handlers/systems.go
-
 package handlers
 
 import (
@@ -64,7 +62,6 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 				bestSafeExit := ""
 
 				for exitID, whJumps := range exits {
-					// 1. Calculate SHORTEST (Any Sec)
 					gateJumps, err := esiClient.GetRouteDistance(exitID, hubID, "shortest")
 					if err == nil {
 						total := whJumps + gateJumps
@@ -75,7 +72,6 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 						}
 					}
 
-					// 2. Calculate SAFE (High-Sec Only)
 					safeGateJumps, err := esiClient.GetRouteDistance(exitID, hubID, "secure")
 					if err == nil && safeGateJumps < 900 { // 999 means no HS route
 						total := whJumps + safeGateJumps
@@ -156,9 +152,8 @@ type HubRoute struct {
 	SafeExitSystem string `json:"safe_exit_system"`
 }
 
-// Helper to find all K-space systems reachable from a J-Root via the alliance map
 func findExits(rootID int, allLinks []models.Connection) map[int]int {
-	exits := make(map[int]int) // SystemID -> WH Jumps from Root
+	exits := make(map[int]int)
 	queue := []struct {
 		id    int
 		depth int
@@ -169,15 +164,13 @@ func findExits(rootID int, allLinks []models.Connection) map[int]int {
 		curr := queue[0]
 		queue = queue[1:]
 
-		// If it's K-space, record it as a potential exit
 		if curr.id < 31000000 {
 			if oldDepth, exists := exits[curr.id]; !exists || curr.depth < oldDepth {
 				exits[curr.id] = curr.depth
 			}
-			continue // Don't explore further from a K-space system for this logic
+			continue
 		}
 
-		// Check all connections involving this system
 		for _, link := range allLinks {
 			var nextID int
 			if link.SourceSystemID == curr.id {
