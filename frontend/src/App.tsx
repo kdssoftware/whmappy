@@ -145,17 +145,7 @@ function App() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <div className="w-2 h-2 bg-sky-500 rounded-full animate-pulse" />
-            Active Network
-          </h2>
-          <span className="text-xs text-slate-600 bg-slate-900 px-2 py-1 rounded border border-slate-800 font-mono">
-            {connections.length} Links Discovery
-          </span>
-        </div>
-        
+      <main className="max-w-6xl mx-auto"> 
         {user && jSpaceRoots.length > 0 ? (
           <div className="grid gap-12">
             {jSpaceRoots.map(wh => (
