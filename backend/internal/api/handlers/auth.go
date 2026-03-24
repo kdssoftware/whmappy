@@ -1,9 +1,10 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,11 +19,28 @@ import (
 
 const TargetAllianceID = 99014712
 
+func generateRandomState() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
 func Login(c *fiber.Ctx) error {
 	clientID := os.Getenv("ESI_CLIENT_ID")
 	callback := os.Getenv("ESI_CALLBACK_URL")
 	scopes := "esi-location.read_location.v1 esi-ui.write_waypoint.v1"
-	state := "unique-state-string" // In production, use a random string + session // TODO
+	state := generateRandomState()
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		Expires:  time.Now().Add(15 * time.Minute),
+		HTTPOnly: true,
+		Secure:   true,
+		SameSite: "None",
+		Domain:   ".cultofmagik.org",
+		Path:     "/",
+	})
 
 	authURL := fmt.Sprintf(
 		"https://login.eveonline.com/v2/oauth/authorize/?response_type=code&redirect_uri=%s&client_id=%s&scope=%s&state=%s",
@@ -37,6 +55,14 @@ func Login(c *fiber.Ctx) error {
 
 func Callback(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		state := c.Query("state")
+		savedState := c.Cookies("oauth_state")
+
+		if state == "" || state != savedState {
+			return c.Status(403).SendString("Security check failed: State mismatch.")
+		}
+		c.ClearCookie("oauth_state")
+
 		code := c.Query("code")
 		if code == "" {
 			return c.Status(400).SendString("No code provided from CCP")
@@ -52,7 +78,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil || resp.StatusCode != 200 {
-			log.Printf("Token Exchange Failed: %v", err)
 			return c.Status(500).SendString("Failed to swap code for tokens")
 		}
 		defer resp.Body.Close()
@@ -81,7 +106,7 @@ func Callback(repo *database.Repository) fiber.Handler {
 		allianceURL := fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/", identity.CharacterID)
 		allianceResp, err := http.Get(allianceURL)
 		if err != nil || allianceResp.StatusCode != 200 {
-			return c.Status(500).SendString("Failed to verify alliance membership via ESI")
+			return c.Status(500).SendString("Failed to verify alliance membership")
 		}
 		defer allianceResp.Body.Close()
 
@@ -91,7 +116,6 @@ func Callback(repo *database.Repository) fiber.Handler {
 		json.NewDecoder(allianceResp.Body).Decode(&charInfo)
 
 		if charInfo.AllianceID != TargetAllianceID {
-			log.Printf("Login Rejected: %s (%d) is in alliance %d, not %d", identity.CharacterName, identity.CharacterID, charInfo.AllianceID, TargetAllianceID)
 			return c.Status(403).JSON(fiber.Map{
 				"error":   "Forbidden",
 				"message": "Access restricted to Cult of Magik members only.",
@@ -105,17 +129,14 @@ func Callback(repo *database.Repository) fiber.Handler {
 			RefreshToken: tokenResp.RefreshToken,
 		}
 
-		log.Printf("Saving Character: %s (%d)", char.Name, char.ID)
-		err = repo.SaveCharacter(char)
-		if err != nil {
-			log.Printf("DB Error saving character: %v", err)
+		if err := repo.SaveCharacter(char); err != nil {
 			return c.Status(500).SendString("Database error saving character")
 		}
 
 		c.Cookie(&fiber.Cookie{
 			Name:     "session_id",
 			Value:    fmt.Sprintf("%d", char.ID),
-			Expires:  time.Now().Add(72 * time.Hour),
+			Expires:  time.Now().Add(30 * 24 * time.Hour),
 			HTTPOnly: true,
 			Secure:   true,
 			SameSite: "None",
@@ -123,24 +144,18 @@ func Callback(repo *database.Repository) fiber.Handler {
 			Path:     "/",
 		})
 
-		frontendURL := os.Getenv("FRONTEND_URL")
-		return c.Redirect("https://" + frontendURL)
+		return c.Redirect("https://" + os.Getenv("FRONTEND_URL"))
 	}
 }
 
 func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		sessionID := c.Cookies("session_id")
-
 		if sessionID == "" {
 			return c.JSON([]interface{}{})
 		}
 
-		sesID, err := strconv.Atoi(sessionID)
-		if err != nil {
-			return c.JSON([]interface{}{})
-		}
-
+		sesID, _ := strconv.Atoi(sessionID)
 		char, err := repo.GetCharacter(sesID)
 		if err != nil {
 			return c.JSON([]interface{}{})
@@ -152,7 +167,7 @@ func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 
 func Logout(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		c.ClearCookie("session_id", "session_id")
+		c.ClearCookie("session_id")
 		return c.SendStatus(200)
 	}
 }

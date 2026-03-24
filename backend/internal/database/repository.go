@@ -1,10 +1,8 @@
 package database
 
 import (
-	"fmt"
 	"log"
 	"time"
-	"wh2/internal/esi"
 	"wh2/internal/models"
 
 	"github.com/jmoiron/sqlx"
@@ -27,18 +25,10 @@ func (r *Repository) GetChain(startSystemID int) ([]models.Connection, error) {
 
 	var links []models.Connection
 	err := r.DB.Select(&links, query, startSystemID)
-
-	if err != nil {
-		return nil, err
-	}
-	return links, nil
+	return links, err
 }
 
-func (r *Repository) UpdateLocation(charID int, systemID int, esiClient *esi.Client) error {
-	if err := r.ensureSystemExists(systemID, esiClient); err != nil {
-		return err
-	}
-
+func (r *Repository) UpdateLocation(charID int, systemID int) error {
 	_, err := r.DB.Exec("UPDATE characters SET last_location_id = $1 WHERE id = $2", systemID, charID)
 	return err
 }
@@ -46,12 +36,10 @@ func (r *Repository) UpdateLocation(charID int, systemID int, esiClient *esi.Cli
 func (r *Repository) GetCharacter(charID int) (*models.Character, error) {
 	var char models.Character
 	query := `SELECT id, name, access_token, refresh_token, last_location_id FROM characters WHERE id = $1`
-
 	err := r.DB.Get(&char, query, charID)
 	if err != nil {
 		return nil, err
 	}
-
 	return &char, nil
 }
 
@@ -62,19 +50,7 @@ func (r *Repository) GetAllActiveCharacters() ([]models.Character, error) {
 	return chars, err
 }
 
-func (r *Repository) DeleteExpiredLinks() error {
-	_, err := r.DB.Exec("DELETE FROM connections WHERE expires_at < NOW()")
-	return err
-}
-
-func (r *Repository) HandleJump(charID int, fromID int, toID int, esiClient *esi.Client) error {
-	if err := r.ensureSystemExists(fromID, esiClient); err != nil {
-		return err
-	}
-	if err := r.ensureSystemExists(toID, esiClient); err != nil {
-		return err
-	}
-
+func (r *Repository) HandleJump(charID int, fromID int, toID int) error {
 	isGate, _ := r.CheckIfGateExists(fromID, toID)
 	if isGate {
 		return nil
@@ -95,15 +71,14 @@ func (r *Repository) HandleJump(charID int, fromID int, toID int, esiClient *esi
 		}
 		return err
 	}
-
 	return nil
 }
 
 func (r *Repository) CheckIfGateExists(fromID, toID int) (bool, error) {
+	// Simple logic: if both are K-space, it's a gate. J-space IDs are 31xxxxxx
 	if (fromID >= 31000000 && fromID < 32000000) || (toID >= 31000000 && toID < 32000000) {
 		return false, nil
 	}
-
 	return true, nil
 }
 
@@ -118,20 +93,15 @@ func (r *Repository) SaveCharacter(char models.Character) error {
 	return err
 }
 
-func (r *Repository) ensureSystemExists(id int, esiClient *esi.Client) error {
+func (r *Repository) SystemExists(id int) (bool, error) {
 	var exists bool
-	r.DB.Get(&exists, "SELECT EXISTS(SELECT 1 FROM systems WHERE id=$1)", id)
-	if exists {
-		return nil
-	}
+	err := r.DB.Get(&exists, "SELECT EXISTS(SELECT 1 FROM systems WHERE id=$1)", id)
+	return exists, err
+}
 
-	name, err := esiClient.GetSystemName(id)
-	if err != nil {
-		name = fmt.Sprintf("Unknown %d", id)
-	}
-
+func (r *Repository) AddSystem(id int, name string) error {
 	isWormhole := id >= 31000000 && id < 32000000
-	_, err = r.DB.Exec(`
+	_, err := r.DB.Exec(`
 		INSERT INTO systems (id, name, is_wormhole) 
 		VALUES ($1, $2, $3) 
 		ON CONFLICT (id) DO NOTHING`,
@@ -147,5 +117,10 @@ func (r *Repository) UpdateConnection(id string, whSize string, expiresAt time.T
 
 func (r *Repository) DeleteConnection(id string) error {
 	_, err := r.DB.Exec("DELETE FROM connections WHERE id = $1", id)
+	return err
+}
+
+func (r *Repository) DeleteExpiredLinks() error {
+	_, err := r.DB.Exec("DELETE FROM connections WHERE expires_at < NOW()")
 	return err
 }

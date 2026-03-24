@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"fmt"
 	"log"
 	"time"
 	"wh2/internal/database"
@@ -17,23 +18,46 @@ func StartPoller(repo *database.Repository, esiClient *esi.Client) {
 		}
 
 		for _, char := range chars {
-			currLoc, err := esiClient.GetLocation(char.ID, char.AccessToken)
+			token, err := esiClient.GetValidToken(repo, char.ID)
+			if err != nil {
+				log.Printf("Poller: Token refresh failed for %s: %v", char.Name, err)
+				continue
+			}
+
+			currLoc, err := esiClient.GetLocation(char.ID, token)
 			if err != nil {
 				continue
 			}
 
+			exists, _ := repo.SystemExists(currLoc)
+			if !exists {
+				name, _ := esiClient.GetSystemName(currLoc)
+				if name == "" {
+					name = fmt.Sprintf("Unknown %d", currLoc)
+				}
+				repo.AddSystem(currLoc, name)
+			}
+
 			if char.LastLocation == nil {
-				repo.UpdateLocation(char.ID, currLoc, esiClient)
+				log.Printf("Poller: Initializing location for %s at %d", char.Name, currLoc)
+				repo.UpdateLocation(char.ID, currLoc)
 				continue
 			}
 
-			lastLocValue := *char.LastLocation
+			lastLocID := *char.LastLocation
 
-			if currLoc != lastLocValue {
-				log.Printf("Poller: Jump detected for %s! %d -> %d", char.Name, lastLocValue, currLoc)
-				err = repo.HandleJump(char.ID, lastLocValue, currLoc, esiClient)
+			if lastLocID != currLoc {
+				log.Printf("Poller: Jump detected for %s! %d -> %d", char.Name, lastLocID, currLoc)
+
+				prevExists, _ := repo.SystemExists(lastLocID)
+				if !prevExists {
+					name, _ := esiClient.GetSystemName(lastLocID)
+					repo.AddSystem(lastLocID, name)
+				}
+
+				err = repo.HandleJump(char.ID, lastLocID, currLoc)
 				if err == nil {
-					repo.UpdateLocation(char.ID, currLoc, esiClient)
+					repo.UpdateLocation(char.ID, currLoc)
 				}
 			}
 		}

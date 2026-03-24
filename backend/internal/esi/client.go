@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"wh2/internal/database"
 )
 
 type Client struct {
@@ -148,4 +149,21 @@ func (c *Client) GetCharacterAlliance(charID int) (int, error) {
 	}
 
 	return data.AllianceID, nil
+}
+
+func (c *Client) GetValidToken(repo *database.Repository, charID int) (string, error) {
+	char, err := repo.GetCharacter(charID)
+	if err != nil {
+		return "", err
+	}
+
+	newToken, err := c.RefreshToken(char.RefreshToken)
+	if err != nil {
+		return "", err
+	}
+
+	char.AccessToken = newToken
+	repo.SaveCharacter(*char)
+
+	return newToken, nil
 }
