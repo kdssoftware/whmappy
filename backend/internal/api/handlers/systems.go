@@ -1,3 +1,4 @@
+// backend/internal/api/handlers/systems.go
 package handlers
 
 import (
@@ -191,4 +192,54 @@ func findExits(rootID int, allLinks []models.Connection) map[int]int {
 		}
 	}
 	return exits
+}
+
+func GetSystemTags(repo *database.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id, _ := c.ParamsInt("id")
+		tags, err := repo.GetTags(id)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(tags)
+	}
+}
+
+func GetAllTags(repo *database.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tags, err := repo.GetAllTags()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(tags)
+	}
+}
+
+func AddSystemTag(repo *database.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id, _ := c.ParamsInt("id")
+		var body struct {
+			Tag string `json:"tag"`
+		}
+		if err := c.BodyParser(&body); err != nil || body.Tag == "" {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid tag"})
+		}
+
+		err := repo.AddTag(id, body.Tag)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.SendStatus(201)
+	}
+}
+
+func DeleteSystemTag(repo *database.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tagID, _ := c.ParamsInt("id")
+		err := repo.DeleteTag(tagID)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Delete failed"})
+		}
+		return c.SendStatus(204)
+	}
 }

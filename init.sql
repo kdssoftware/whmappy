@@ -1,3 +1,8 @@
+-- init.sql
+--
+-- ONLY APPEND TO THE END OF THIS FILE
+-- THIS IS A SIMPLE DATABASE MIGRATION FILE
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE DATABASE eve_mapper;
 
@@ -33,3 +38,11 @@ INSERT INTO systems (id, name, security_status, is_wormhole) VALUES
 (30002187, 'Amarr', 1.0, false),
 (31000001, 'J100227', -1.0, true)
 ON CONFLICT (id) DO NOTHING;
+
+-- tag feature
+CREATE TABLE IF NOT EXISTS system_tags (
+    id SERIAL PRIMARY KEY,
+    system_id INTEGER NOT NULL REFERENCES systems(id) ON DELETE CASCADE,
+    tag_name VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

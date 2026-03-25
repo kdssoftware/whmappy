@@ -1,3 +1,4 @@
+// backend/internal/api/handlers/navigation.go
 package handlers
 
 import (

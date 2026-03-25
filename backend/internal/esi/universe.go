@@ -1,3 +1,4 @@
+// backend/internal/esi/universe.go
 package esi
 
 func IsWormholeSystem(systemID int) bool {

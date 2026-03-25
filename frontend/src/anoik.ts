@@ -1,3 +1,5 @@
+// frontend/src/anoik.ts
+
 export interface Anoik {
   constellations: Constellations
   effects: Effects

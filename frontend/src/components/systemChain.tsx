@@ -1,12 +1,14 @@
+// frontend/src/components/systemChain.tsx
 import React, { useState } from 'react';
 import { MapPin, Clock, ArrowRight, Settings2, Check, X, Trash2 } from 'lucide-react';
 import { formatDistanceToNow, addHours } from 'date-fns';
 import axios from 'axios';
-import type { Connection } from '../types';
+import type { Connection, Tag } from '../types';
 
 type Props = {
   systemId: number;
   allConnections: Connection[];
+  tags: Record<number, Tag[]>;
   currentUser: { id: number; name: string } | null;
   visited?: Set<number>;
   onUpdate?: () => void;
@@ -14,7 +16,7 @@ type Props = {
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777"
 
-export const SystemChain: React.FC<Props> = ({ systemId, allConnections, currentUser, visited = new Set(), onUpdate }) => {
+export const SystemChain: React.FC<Props> = ({ systemId, allConnections, tags, currentUser, visited = new Set(), onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSize, setEditSize] = useState("");
   const [editHours, setEditHours] = useState(24);
@@ -116,9 +118,17 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
                 <div className="flex items-center gap-3 bg-slate-800 p-3 rounded-lg border border-slate-800 group hover:border-slate-700 transition-colors shadow-lg">
                   <ArrowRight size={14} className="text-slate-600" />
                   <div className="flex-1">
-                    <span className="text-sm font-bold text-slate-100 tracking-wider">
-                      {otherName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-100 tracking-wider">
+                          {otherName}
+                        </span>
+                        {/* Chain Tags */}
+                        {tags[otherId]?.map(t => (
+                            <span key={t.id} className="text-[9px] bg-slate-900 text-slate-400 px-1 py-0.5 rounded border border-slate-800">
+                                {t.tag_name}
+                            </span>
+                        ))}
+                    </div>
                   </div>
                   <button onClick={() => setWaypoint(otherId)} className="p-2 hover:bg-blue-500/20 text-blue-500 rounded-md">
                     <MapPin size={16} />
@@ -130,6 +140,7 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, current
             <SystemChain 
               systemId={otherId} 
               allConnections={allConnections} 
+              tags={tags}
               currentUser={currentUser}
               visited={newVisited}
               onUpdate={onUpdate}

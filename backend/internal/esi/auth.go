@@ -1,3 +1,4 @@
+// backend/internal/esi/auth.go
 package esi
 
 import (

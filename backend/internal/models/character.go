@@ -1,3 +1,4 @@
+// backend/internal/models/character.go
 package models
 
 type Character struct {

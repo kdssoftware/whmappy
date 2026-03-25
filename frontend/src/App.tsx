@@ -1,3 +1,4 @@
+// frontend/src/App.tsx
 import { useEffect, useState } from 'react';
 import anoikDataRaw from './anoik.json';
 import type { Anoik } from './anoik';
@@ -13,7 +14,7 @@ import {
   Zap
 } from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
-import type { Connection } from './types';
+import type { Connection, Tag } from './types';
 
 const anoikData = anoikDataRaw as unknown as Anoik;
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777"
@@ -36,15 +37,20 @@ axios.defaults.withCredentials = true;
 function App() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [hubRoutes, setHubRoutes] = useState<Record<number, HubRoute[]>>({});
+  const [tags, setTags] = useState<Record<number, Tag[]>>({});
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<EveUser | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/map/all`);
-      const raw: Connection[] = res.data.connections || [];
-      const routes: Record<number, HubRoute[]> = res.data.hub_routes || {};
+      const [mapRes, tagsRes] = await Promise.all([
+        axios.get(`${BACKEND_URL}/api/map/all`),
+        axios.get(`${BACKEND_URL}/api/tags`).catch(() => ({ data: [] }))
+      ]);
+
+      const raw: Connection[] = mapRes.data.connections || [];
+      const routes: Record<number, HubRoute[]> = mapRes.data.hub_routes || {};
       
       const normalized = Object.values(raw.reduce((acc: Record<string, Connection>, curr: Connection) => {
         const key = [curr.source_id, curr.target_id].sort().join('-');
@@ -52,14 +58,36 @@ function App() {
         return acc;
       }, {}));
 
+      // Group tags by system_id
+      const groupedTags = (tagsRes.data || []).reduce((acc: Record<number, Tag[]>, tag: Tag) => {
+        if (!acc[tag.system_id]) acc[tag.system_id] = [];
+        acc[tag.system_id].push(tag);
+        return acc;
+      }, {});
+
       setConnections(normalized as Connection[]);
       setHubRoutes(routes);
+      setTags(groupedTags);
     } catch (err) {
       console.error("Map fetch error:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  const addTag = async (systemId: number, name: string) => {
+    try {
+      await axios.post(`${BACKEND_URL}/api/systems/${systemId}/tags`, { tag: name });
+      fetchData();
+    } catch { alert("Failed to add tag"); }
+  }
+
+  const deleteTag = async (tagId: number) => {
+    try {
+      await axios.delete(`${BACKEND_URL}/api/tags/${tagId}`);
+      fetchData();
+    } catch { alert("Failed to delete tag"); }
+  }
 
   const fetchUser = async () => {
     try {
@@ -177,6 +205,22 @@ function App() {
                         );
                       })}
                       
+                      {/* TAGS UI */}
+                      {tags[wh.id]?.map(t => (
+                         <div key={t.id} className="bg-slate-700 text-[10px] px-2 py-1 rounded flex items-center gap-1 border border-slate-600">
+                            {t.tag_name}
+                            <button onClick={() => deleteTag(t.id)} className="hover:text-red-400">×</button>
+                         </div>
+                      ))}
+                      {(!tags[wh.id] || tags[wh.id].length < 2) && user && (
+                          <input 
+                             maxLength={255}
+                             className="bg-transparent border-b border-slate-600 text-[10px] w-16 px-1" 
+                             placeholder="+ tag"
+                             onKeyDown={(e) => { if(e.key === 'Enter') addTag(wh.id, (e.target as HTMLInputElement).value) }}
+                          />
+                      )}
+                      
                       {anoikData.systems[wh.name]?.effectName && (
                         <span className="text-[10px] bg-purple-900/20 text-purple-400 px-2 py-1 rounded border border-purple-500/30 font-bold uppercase tracking-tighter flex items-center gap-1">
                           <StarIcon size={12} fill="currentColor" /> {anoikData.systems[wh.name].effectName}
@@ -200,21 +244,14 @@ function App() {
                     {hubRoutes[wh.id]?.sort((a,b)=>a.total_jumps - b.total_jumps).map((route) => (
                       <div key={route.hub_name} className="bg-slate-900/80 border border-slate-800 p-3 rounded-lg min-w-[120px] flex flex-col border-b-2 border-b-sky-500/50 shadow-inner">
                         <span className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-2 border-b border-slate-800 pb-1">{route.hub_name}</span>
-                        
-                        
-                            <div className="flex flex-col gap-1">
-
-                        { route.total_jumps !== route.total_safe_jumps &&
+                        <div className="flex flex-col gap-1">
+                            { route.total_jumps !== route.total_safe_jumps &&
                                 <div className="flex items-center justify-between gap-2" title="Shortest Route">
                                 <Zap size={10} className="text-orange-700" />
                                 <span className="text-xs font-black text-orange-600">{route.total_jumps}j</span>
-
-                                    <div className="text-[9px] text-slate-500 font-medium truncate">
-                           via {route.exit_system}
-                        </div>
+                                <div className="text-[9px] text-slate-500 font-medium truncate">via {route.exit_system}</div>
                            </div>
                         }
-
                            <div className="flex items-center justify-between gap-2" title="High-Sec Only Route">
                               <ShieldCheck size={10} className="text-green-700" />
                               <span className="text-xs font-black text-green-600">
@@ -222,9 +259,7 @@ function App() {
                                   ? `${route.total_safe_jumps}j` 
                                   : <span className="text-slate-600 font-normal italic">N/A</span>}
                               </span>
-                        <div className="text-[9px] text-slate-500 font-medium truncate">
-                           via {route.safe_exit_system}
-                        </div>
+                            <div className="text-[9px] text-slate-500 font-medium truncate">via {route.safe_exit_system}</div>
                            </div>
                         </div>
                       </div>
@@ -235,6 +270,7 @@ function App() {
                 <SystemChain 
                   systemId={wh.id} 
                   allConnections={connections} 
+                  tags={tags}
                   currentUser={user} 
                   onUpdate={fetchData} 
                 />
@@ -244,7 +280,7 @@ function App() {
         ) : (
           <div className="text-center py-24 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4 text-slate-600">
             <Database size={48} className="opacity-20" />
-            <p className="font-mono uppercase tracking-widest text-sm">Waiting for Scan Data...</p>
+            <p className="font-mono uppercase tracking-widest text-sm">Login and jump through womrholes to add data</p>
           </div>
         )}
       </main>

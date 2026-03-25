@@ -1,3 +1,4 @@
+// backend/internal/api/router.go
 package api
 
 import (
@@ -34,4 +35,8 @@ func SetupRoutes(app *fiber.App, repo *database.Repository, esiClient *esi.Clien
 	api.Post("/waypoint/:system_id", handlers.SetWaypoint(repo, esiClient))
 	api.Patch("/connections/:id", handlers.UpdateConnection(repo))
 	api.Delete("/connections/:id", handlers.DeleteConnection(repo))
+
+	api.Get("/tags", handlers.GetAllTags(repo))
+	api.Post("/systems/:id/tags", handlers.AddSystemTag(repo))
+	api.Delete("/tags/:id", handlers.DeleteSystemTag(repo))
 }

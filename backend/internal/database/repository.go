@@ -1,6 +1,8 @@
+// backend/internal/database/repository.go
 package database
 
 import (
+	"fmt"
 	"log"
 	"time"
 	"wh2/internal/models"
@@ -123,4 +125,35 @@ func (r *Repository) DeleteConnection(id string) error {
 func (r *Repository) DeleteExpiredLinks() error {
 	_, err := r.DB.Exec("DELETE FROM connections WHERE expires_at < NOW()")
 	return err
+}
+
+func (r *Repository) GetTags(systemID int) ([]models.Tag, error) {
+	var tags []models.Tag
+	err := r.DB.Select(&tags, "SELECT * FROM system_tags WHERE system_id = $1", systemID)
+	return tags, err
+}
+
+func (r *Repository) AddTag(systemID int, tagName string) error {
+	var count int
+	err := r.DB.Get(&count, "SELECT COUNT(*) FROM system_tags WHERE system_id = $1", systemID)
+	if err != nil {
+		return err
+	}
+	if count >= 2 {
+		return fmt.Errorf("limit of 2 tags reached")
+	}
+
+	_, err = r.DB.Exec("INSERT INTO system_tags (system_id, tag_name) VALUES ($1, $2)", systemID, tagName)
+	return err
+}
+
+func (r *Repository) DeleteTag(tagID int) error {
+	_, err := r.DB.Exec("DELETE FROM system_tags WHERE id = $1", tagID)
+	return err
+}
+
+func (r *Repository) GetAllTags() ([]models.Tag, error) {
+	var tags []models.Tag
+	err := r.DB.Select(&tags, "SELECT * FROM system_tags")
+	return tags, err
 }

@@ -1,3 +1,4 @@
+// backend/internal/api/handlers/auth.go
 package handlers
 
 import (
@@ -57,6 +58,7 @@ func Callback(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		state := c.Query("state")
 		savedState := c.Cookies("oauth_state")
+		fmt.Println(state == "")
 
 		if state == "" || state != savedState {
 			return c.Status(403).SendString("Security check failed: State mismatch.")
@@ -140,11 +142,11 @@ func Callback(repo *database.Repository) fiber.Handler {
 			HTTPOnly: true,
 			Secure:   true,
 			SameSite: "None",
-			Domain:   ".cultofmagik.org",
+			Domain:   ".cultofmagik.org", // TODO local cookie
 			Path:     "/",
 		})
 
-		return c.Redirect("https://" + os.Getenv("FRONTEND_URL"))
+		return c.Redirect(os.Getenv("FRONTEND_URL"))
 	}
 }
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+# seed.sh
 docker exec -it eve-mapper-db psql -U postgres -d eve_mapper -c "
 INSERT INTO systems (id, name, is_wormhole) VALUES 
 (30000142, 'Jita', false),

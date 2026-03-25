@@ -1,3 +1,4 @@
+// frontend/src/types.ts
 export type System ={
   id: number;
   name: string;
@@ -19,4 +20,10 @@ export type Connection ={
 
 export interface MapNode extends System {
   connections: Connection[];
+}
+
+export type Tag = {
+  id: number;
+  system_id: number;
+  tag_name: string;
 }

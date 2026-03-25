@@ -1,3 +1,4 @@
+// backend/internal/models/connection.go
 package models
 
 import (
