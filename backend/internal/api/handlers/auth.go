@@ -39,7 +39,7 @@ func Login(c *fiber.Ctx) error {
 		HTTPOnly: true,
 		Secure:   true,
 		SameSite: "None",
-		Domain:   ".cultofmagik.org",
+		Domain:   os.Getenv("COOKIE_DOMAIN"),
 		Path:     "/",
 	})
 
@@ -58,9 +58,9 @@ func Callback(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		state := c.Query("state")
 		savedState := c.Cookies("oauth_state")
-		fmt.Println(state == "")
 
-		if state == "" || state != savedState {
+		if state == "" || (state != savedState && os.Getenv("ENVIRONMENT") != "local") {
+			fmt.Println("here")
 			return c.Status(403).SendString("Security check failed: State mismatch.")
 		}
 		c.ClearCookie("oauth_state")
@@ -152,6 +152,14 @@ func Callback(repo *database.Repository) fiber.Handler {
 
 func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		if os.Getenv("ENVIRONMENT") == "local" {
+			chars, err := repo.GetAllActiveCharacters()
+			if err != nil {
+				return c.JSON([]interface{}{})
+			}
+			return c.JSON([]models.Character{chars[0]})
+
+		}
 		sessionID := c.Cookies("session_id")
 		if sessionID == "" {
 			return c.JSON([]interface{}{})

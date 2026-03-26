@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { SystemChain } from './components/systemChain'; 
 import type { Connection, Tag } from './types';
+import { TRADE_HUBS } from './utils';
 
 const anoikData = anoikDataRaw as unknown as Anoik;
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777"
@@ -241,8 +242,10 @@ function App() {
 
                   {/* HUB NAVIGATION BADGES */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xl:justify-end">
-                    {hubRoutes[wh.id]?.sort((a,b)=>a.total_jumps - b.total_jumps).map((route) => (
-                      <div key={route.hub_name} className="bg-slate-900/80 border border-slate-800 p-3 rounded-lg min-w-[120px] flex flex-col border-b-2 border-b-sky-500/50 shadow-inner">
+                    {hubRoutes[wh.id]?.sort((a,b)=>a.hub_name.localeCompare(b.hub_name)).map((route) => (
+                      <div key={route.hub_name} className="bg-slate-900/80 border border-slate-800 p-3 rounded-lg min-w-[120px] flex flex-col border-b-2 shadow-inner" 
+                style={{borderBottomColor: TRADE_HUBS[route.hub_name]}}
+                      >
                         <span className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-2 border-b border-slate-800 pb-1">{route.hub_name}</span>
                         <div className="flex flex-col gap-1">
                             { route.total_jumps !== route.total_safe_jumps &&
