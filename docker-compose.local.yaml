@@ -1,33 +1,26 @@
+# docker-compose.local.yaml
 services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    env_file:
-      - ./frontend/.env.local
+      dockerfile: Dockerfile.local
     container_name: eve-mapper-frontend
-    develop:
-      watch:
-        - action: sync+restart
-          path: ./frontend
-          target: /app/dist
-          ignore:
-            - node_modules/
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "5175:5175"
     networks:
       - eve-network
     restart: always
+
   backend:
-    develop:
-      watch:
-        - action: sync+restart
-          path: ./backend
-          target: /app
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     container_name: eve-mapper-backend
+    volumes:
+      - ./backend:/app
     ports:
       - "7777:7777"
     env_file:
@@ -40,7 +33,6 @@ services:
     networks:
       - eve-network
 
-  # Redis for ESI Caching # still TODO
   redis:
     image: redis:7-alpine
     container_name: eve-mapper-redis

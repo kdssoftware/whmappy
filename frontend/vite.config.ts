@@ -9,6 +9,11 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+ host: '0.0.0.0',
+    port: 5175,
+    watch: {
+      usePolling: true,
+    },
         allowedHosts: [ "dev.wh.cultofmagik.org", "wh.cultofmagik.org" ],
   }
 })

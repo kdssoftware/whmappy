@@ -142,7 +142,7 @@ func Callback(repo *database.Repository) fiber.Handler {
 			HTTPOnly: true,
 			Secure:   true,
 			SameSite: "None",
-			Domain:   ".cultofmagik.org", // TODO local cookie
+			Domain:   os.Getenv("COOKIE_DOMAIN"),
 			Path:     "/",
 		})
 
