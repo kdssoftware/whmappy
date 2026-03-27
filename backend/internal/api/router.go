@@ -32,6 +32,8 @@ func SetupRoutes(app *fiber.App, repo *database.Repository, esiClient *esi.Clien
 	api.Get("/map/all", handlers.GetAllConnections(repo, esiClient))
 	api.Get("/map/:id", handlers.GetSystemMap(repo))
 
+	api.Get("/routes/calc", handlers.CalculateHubRoute(repo, esiClient))
+
 	api.Post("/systems/:id/pin", handlers.PinSystem(repo))
 	api.Post("/systems/:id/unpin", handlers.UnpinSystem(repo))
 

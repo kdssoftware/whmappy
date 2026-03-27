@@ -36,12 +36,10 @@ type CachedResponse[T any] struct {
 	Err   string `json:"err"`
 }
 
-// withCache wraps any ESI operation with a 5 minute Redis cache execution
 func withCache[T any](c *Client, cacheKey string, fetch func() (T, error)) (T, error) {
 	var zero T
 	ctx := context.Background()
 
-	// 1. Try Cache First
 	cachedStr, err := c.RedisClient.Get(ctx, cacheKey).Result()
 	if err == nil && cachedStr != "" {
 		var cr CachedResponse[T]
@@ -53,10 +51,8 @@ func withCache[T any](c *Client, cacheKey string, fetch func() (T, error)) (T, e
 		}
 	}
 
-	// 2. Fetch fresh from ESI
 	val, fetchErr := fetch()
 
-	// 3. Store the result (or error) into Redis for 5 Minutes
 	cr := CachedResponse[T]{
 		Value: val,
 	}
@@ -101,7 +97,6 @@ func (c *Client) GetLocation(charID int, token string) (int, error) {
 
 func (c *Client) SetWaypoint(charID int, destinationID int, token string) error {
 	cacheKey := fmt.Sprintf("esi:waypoint:%d:%d", charID, destinationID)
-	// Map to boolean for the generic cache struct
 	_, err := withCache(c, cacheKey, func() (bool, error) {
 		url := fmt.Sprintf("https://esi.evetech.net/latest/ui/autopilot/waypoint/?add_to_beginning=false&clear_other_waypoints=false&destination_id=%d", destinationID)
 

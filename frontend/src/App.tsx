@@ -4,6 +4,7 @@ import { api } from './api';
 import { normalizeConnections, groupTagsBySystem, getJSpaceRoots } from './utils';
 import { Header } from './components/Header';
 import { SystemCard } from './components/SystemCard';
+import { HubRouteCalculator } from './components/HubRouteCalculator';
 import type { Connection, Tag, HubRoute, EveUser, System } from './types';
 
 import anoikDataRaw from './anoik.json';
@@ -13,11 +14,11 @@ const anoikData = anoikDataRaw as unknown as Anoik;
 
 function App() {
   const [connections, setConnections] = useState<Connection[]>([]);
-  const[hubRoutes, setHubRoutes] = useState<Record<number, HubRoute[]>>({});
-  const[tags, setTags] = useState<Record<number, Tag[]>>({});
+  const [hubRoutes, setHubRoutes] = useState<Record<number, HubRoute[]>>({});
+  const [tags, setTags] = useState<Record<number, Tag[]>>({});
   const [pinnedSystems, setPinnedSystems] = useState<System[]>([]);
-  const [loading, setLoading] = useState(true);
-  const[user, setUser] = useState<EveUser | null>(null);
+  const[loading, setLoading] = useState(true);
+  const [user, setUser] = useState<EveUser | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -27,7 +28,7 @@ function App() {
         api.tags.getAll().catch(() => ({ data: [] }))
       ]);
 
-      const raw: Connection[] = mapRes.data.connections ||[];
+      const raw: Connection[] = mapRes.data.connections || [];
       const routes: Record<number, HubRoute[]> = mapRes.data.hub_routes || {};
       const pinned: System[] = mapRes.data.pinned_systems ||[];
       
@@ -126,6 +127,8 @@ function App() {
       />
 
       <main className="max-w-6xl mx-auto"> 
+        {user && <HubRouteCalculator />}
+
         {user && jSpaceRoots.length > 0 ? (
           <div className="grid gap-12">
             {jSpaceRoots.map(wh => {
@@ -151,10 +154,12 @@ function App() {
             })}
           </div>
         ) : (
-          <div className="text-center py-24 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4 text-slate-600">
-            <Database size={48} className="opacity-20" />
-            <p className="font-mono uppercase tracking-widest text-sm">Login and jump through wormholes to add data</p>
-          </div>
+          !user && (
+            <div className="text-center py-24 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4 text-slate-600">
+              <Database size={48} className="opacity-20" />
+              <p className="font-mono uppercase tracking-widest text-sm">Login and jump through wormholes to add data</p>
+            </div>
+          )
         )}
       </main>
     </div>

@@ -14,6 +14,9 @@ export const api = {
   map: {
     getAll: () => axios.get(`${BACKEND_URL}/api/map/all`),
   },
+  routes: {
+    calc: (from: string, to: string) => axios.get(`${BACKEND_URL}/api/routes/calc?from=${from}&to=${to}`)
+  },
   systems: {
     pin: (id: number) => axios.post(`${BACKEND_URL}/api/systems/${id}/pin`),
     unpin: (id: number) => axios.post(`${BACKEND_URL}/api/systems/${id}/unpin`),

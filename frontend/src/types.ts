@@ -41,3 +41,20 @@ export type Tag = {
   system_id: number;
   tag_name: string;
 }
+
+export type RouteCalculationResult = {
+  shortest: {
+    total_jumps: number;
+    route_type: string;
+    entrance?: string;
+    exit?: string;
+    wh_path?: string[];
+  };
+  secure: {
+    total_jumps: number;
+    route_type: string;
+    entrance?: string;
+    exit?: string;
+    wh_path?: string[];
+  };
+};
