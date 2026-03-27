@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 	"wh2/internal/database"
+	"wh2/internal/esi"
 	"wh2/internal/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -54,7 +55,7 @@ func Login(c *fiber.Ctx) error {
 	return c.Redirect(authURL)
 }
 
-func Callback(repo *database.Repository) fiber.Handler {
+func Callback(repo *database.Repository, esiClient *esi.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		state := c.Query("state")
 		savedState := c.Cookies("oauth_state")
@@ -105,19 +106,13 @@ func Callback(repo *database.Repository) fiber.Handler {
 		}
 		json.NewDecoder(verifyResp.Body).Decode(&identity)
 
-		allianceURL := fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/", identity.CharacterID)
-		allianceResp, err := http.Get(allianceURL)
-		if err != nil || allianceResp.StatusCode != 200 {
+		// Rely on ESI Cache instead of manual un-cached http call
+		allianceID, err := esiClient.GetCharacterAlliance(identity.CharacterID)
+		if err != nil {
 			return c.Status(500).SendString("Failed to verify alliance membership")
 		}
-		defer allianceResp.Body.Close()
 
-		var charInfo struct {
-			AllianceID int `json:"alliance_id"`
-		}
-		json.NewDecoder(allianceResp.Body).Decode(&charInfo)
-
-		if charInfo.AllianceID != TargetAllianceID {
+		if allianceID != TargetAllianceID {
 			return c.Status(403).JSON(fiber.Map{
 				"error":   "Forbidden",
 				"message": "Access restricted to Cult of Magik members only.",

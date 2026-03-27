@@ -25,7 +25,7 @@ func SetupRoutes(app *fiber.App, repo *database.Repository, esiClient *esi.Clien
 
 	api := app.Group("/api")
 	api.Get("/auth/login", handlers.Login)
-	api.Get("/auth/callback", handlers.Callback(repo))
+	api.Get("/auth/callback", handlers.Callback(repo, esiClient))
 	api.Get("/auth/me", handlers.GetCurrentUsers(repo))
 	api.Post("/auth/logout", handlers.Logout(repo))
 

@@ -14,8 +14,9 @@ import (
 
 func main() {
 	db := database.ConnectPostgres()
+	rdb := database.ConnectRedis()
 	repo := &database.Repository{DB: db}
-	esiClient := esi.NewClient(os.Getenv("ESI_CLIENT_ID"), os.Getenv("ESI_SECRET"))
+	esiClient := esi.NewClient(os.Getenv("ESI_CLIENT_ID"), os.Getenv("ESI_SECRET"), rdb)
 
 	go worker.StartPoller(repo, esiClient)
 	go worker.StartJanitor(repo)
