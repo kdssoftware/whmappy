@@ -14,7 +14,13 @@ func StartJanitor(repo *database.Repository) {
 			log.Println("Janitor: Cleaning up expired wormholes...")
 			err := repo.DeleteExpiredLinks()
 			if err != nil {
-				log.Printf("Janitor Error: %v", err)
+				log.Printf("Janitor Error (links): %v", err)
+			}
+
+			// Deletes unpinned J-space systems that are totally disconnected from the map
+			err = repo.CleanOrphanedSystems()
+			if err != nil {
+				log.Printf("Janitor Error (systems): %v", err)
 			}
 		}
 	}()

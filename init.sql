@@ -46,3 +46,6 @@ CREATE TABLE IF NOT EXISTS system_tags (
     tag_name VARCHAR(50) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Pin feature migration
+ALTER TABLE systems ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;

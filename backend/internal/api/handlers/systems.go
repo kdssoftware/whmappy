@@ -46,6 +46,13 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 			}
 		}
 
+		pinnedSystems, _ := repo.GetPinnedSystems()
+		for _, p := range pinnedSystems {
+			if p.ID >= 31000000 {
+				jRoots[p.ID] = p.Name
+			}
+		}
+
 		results := make(map[int][]HubRoute)
 		hubs := map[string]int{"Jita": Jita, "Amarr": Amarr, "Dodixie": Dodixie, "Hek": Hek}
 
@@ -97,8 +104,9 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 		}
 
 		return c.JSON(fiber.Map{
-			"connections": links,
-			"hub_routes":  results,
+			"connections":    links,
+			"hub_routes":     results,
+			"pinned_systems": pinnedSystems,
 		})
 	}
 }
@@ -125,6 +133,7 @@ func UpdateConnection(repo *database.Repository) fiber.Handler {
 		return c.SendStatus(204)
 	}
 }
+
 func DeleteConnection(repo *database.Repository) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
@@ -240,6 +249,30 @@ func DeleteSystemTag(repo *database.Repository) fiber.Handler {
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Delete failed"})
 		}
+		return c.SendStatus(204)
+	}
+}
+
+func PinSystem(repo *database.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id, _ := c.ParamsInt("id")
+		if err := repo.SetSystemPin(id, true); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.SendStatus(204)
+	}
+}
+
+func UnpinSystem(repo *database.Repository) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id, _ := c.ParamsInt("id")
+		if err := repo.SetSystemPin(id, false); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		// Immediately attempt cleanup to rapidly reflect the janitor removal logic if orphaned
+		go repo.CleanOrphanedSystems()
+
 		return c.SendStatus(204)
 	}
 }

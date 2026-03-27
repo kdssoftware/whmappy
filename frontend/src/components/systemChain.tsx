@@ -1,24 +1,21 @@
-// frontend/src/components/systemChain.tsx
 import React, { useState } from 'react';
 import { MapPin, Clock, ArrowRight, Settings2, Check, X, Trash2 } from 'lucide-react';
 import { formatDistanceToNow, addHours } from 'date-fns';
-import axios from 'axios';
-import type { Connection, Tag } from '../types';
+import { api } from '../api';
+import type { Connection, Tag, EveUser } from '../types';
 
 type Props = {
   systemId: number;
   allConnections: Connection[];
   tags: Record<number, Tag[]>;
-  currentUser: { id: number; name: string } | null;
+  currentUser: EveUser | null;
   visited?: Set<number>;
   onUpdate?: () => void;
 }
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777"
-
 export const SystemChain: React.FC<Props> = ({ systemId, allConnections, tags, currentUser, visited = new Set(), onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editSize, setEditSize] = useState("");
+  const[editSize, setEditSize] = useState("");
   const [editHours, setEditHours] = useState(24);
 
   const startEdit = (link: Connection) => {
@@ -28,7 +25,7 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, tags, c
 
   const saveEdit = async (id: string) => {
     try {
-      await axios.patch(`${BACKEND_URL}/api/connections/${id}`, {
+      await api.connections.update(id, {
         wh_size: editSize,
         expires_at: addHours(new Date(), editHours).toISOString()
       });
@@ -40,7 +37,7 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, tags, c
   const deleteConnection = async (id: string) => {
     if (!window.confirm("Are you sure this wormhole has collapsed?")) return;
     try {
-      await axios.delete(`${BACKEND_URL}/api/connections/${id}`);
+      await api.connections.delete(id);
       if (onUpdate) onUpdate();
     } catch { alert("Failed to delete"); }
   };
@@ -48,9 +45,7 @@ export const SystemChain: React.FC<Props> = ({ systemId, allConnections, tags, c
   const setWaypoint = async (targetId: number) => {
     if (!currentUser) return alert("Please login first!");
     try {
-      await axios.post(`${BACKEND_URL}/api/waypoint/${targetId}`, {}, {
-        headers: { 'X-Character-ID': currentUser.id.toString() }
-      });
+      await api.waypoints.set(targetId, currentUser.id);
     } catch (err) { console.error(err); }
   };
 

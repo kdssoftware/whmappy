@@ -157,3 +157,26 @@ func (r *Repository) GetAllTags() ([]models.Tag, error) {
 	err := r.DB.Select(&tags, "SELECT * FROM system_tags")
 	return tags, err
 }
+
+func (r *Repository) SetSystemPin(id int, pinned bool) error {
+	_, err := r.DB.Exec("UPDATE systems SET is_pinned = $1 WHERE id = $2", pinned, id)
+	return err
+}
+
+func (r *Repository) GetPinnedSystems() ([]models.System, error) {
+	var sys []models.System
+	err := r.DB.Select(&sys, "SELECT id, name, is_wormhole, is_pinned FROM systems WHERE is_pinned = true")
+	return sys, err
+}
+
+func (r *Repository) CleanOrphanedSystems() error {
+	_, err := r.DB.Exec(`
+		DELETE FROM systems 
+		WHERE is_wormhole = true 
+		AND is_pinned = false 
+		AND id NOT IN (SELECT source_system_id FROM connections)
+		AND id NOT IN (SELECT target_system_id FROM connections)
+		AND id NOT IN (SELECT last_location_id FROM characters WHERE last_location_id IS NOT NULL)
+	`)
+	return err
+}

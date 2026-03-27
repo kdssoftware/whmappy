@@ -1,12 +1,26 @@
 // frontend/src/types.ts
-export type System ={
+export interface EveUser {
+  id: number;
+  name: string;
+}
+
+export interface HubRoute {
+  hub_name: string;
+  total_jumps: number;
+  total_safe_jumps?: number;
+  exit_system: string;
+  safe_exit_system?: string;
+}
+
+export type System = {
   id: number;
   name: string;
   is_wormhole: boolean;
   security_status: number;
+  is_pinned?: boolean;
 }
 
-export type Connection ={
+export type Connection = {
   id: string;
   source_id: number;
   target_id: number;

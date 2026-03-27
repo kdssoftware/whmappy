@@ -4,8 +4,10 @@ package models
 import "time"
 
 type System struct {
-	ID   int    `json:"id" db:"id"`
-	Name string `json:"name" db:"name"`
+	ID         int    `json:"id" db:"id"`
+	Name       string `json:"name" db:"name"`
+	IsWormhole bool   `json:"is_wormhole" db:"is_wormhole"`
+	IsPinned   bool   `json:"is_pinned" db:"is_pinned"`
 }
 
 type Tag struct {
