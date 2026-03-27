@@ -60,9 +60,10 @@ func Callback(repo *database.Repository, esiClient *esi.Client) fiber.Handler {
 		state := c.Query("state")
 		savedState := c.Cookies("oauth_state")
 
-		if state == "" || (state != savedState && os.Getenv("ENVIRONMENT") != "local") {
-			fmt.Println("here")
-			return c.Status(403).SendString("Security check failed: State mismatch.")
+		if state == "" {
+			if os.Getenv("ENVIRONMENT") != "local" && state != savedState {
+				return c.Status(403).SendString("Security check failed: State mismatch.")
+			}
 		}
 		c.ClearCookie("oauth_state")
 
