@@ -37,7 +37,7 @@ export const HubRouteCalculator: React.FC = () => {
 
       <h2 className="text-lg font-black uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2">
         <Map size={18} className="text-sky-500" />
-        Hub-to-Hub Route Calculator
+        Trade hub route calculator
       </h2>
       
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6 relative z-10">
