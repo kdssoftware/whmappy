@@ -67,9 +67,40 @@ func withCache[T any](c *Client, cacheKey string, fetch func() (T, error)) (T, e
 	return val, fetchErr
 }
 
+func withQuickCache[T any](c *Client, cacheKey string, fetch func() (T, error)) (T, error) {
+	var zero T
+	ctx := context.Background()
+
+	cachedStr, err := c.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil && cachedStr != "" {
+		var cr CachedResponse[T]
+		if err := json.Unmarshal([]byte(cachedStr), &cr); err == nil {
+			if cr.Err != "" {
+				return zero, fmt.Errorf(cr.Err) // Cached error
+			}
+			return cr.Value, nil // Cached success
+		}
+	}
+
+	val, fetchErr := fetch()
+
+	cr := CachedResponse[T]{
+		Value: val,
+	}
+	if fetchErr != nil {
+		cr.Err = fetchErr.Error()
+	}
+
+	if cachedBytes, err := json.Marshal(cr); err == nil {
+		c.RedisClient.Set(ctx, cacheKey, cachedBytes, 5*time.Second)
+	}
+
+	return val, fetchErr
+}
+
 func (c *Client) GetLocation(charID int, token string) (int, error) {
 	cacheKey := fmt.Sprintf("esi:location:%d", charID)
-	return withCache(c, cacheKey, func() (int, error) {
+	return withQuickCache(c, cacheKey, func() (int, error) {
 		req, _ := http.NewRequest("GET", fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/location/", charID), nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("User-Agent", "WH-Mapper-v2")
