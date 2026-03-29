@@ -1,19 +1,22 @@
 // frontend/src/utils.ts
-import type { Connection, Tag, System } from './types';
+import type { Connection, Tag, System } from "./types";
 
-export const TRADE_HUBS : Record<string,string> = {
-    "Jita": "#02add1", // Jita
-    "Dodixie": "#37bb5c", // Dodixie
-    "Amarr": "#e7b817", // Amarr
-    "Hek": "#fe3743", // Hek
-}
+export const TRADE_HUBS: Record<string, string> = {
+  Jita: "#02add1", // Jita
+  Dodixie: "#37bb5c", // Dodixie
+  Amarr: "#e7b817", // Amarr
+  Hek: "#fe3743", // Hek
+};
 
 export const normalizeConnections = (raw: Connection[]): Connection[] => {
-  const normalizedMap = raw.reduce((acc: Record<string, Connection>, curr: Connection) => {
-    const key =[curr.source_id, curr.target_id].sort().join('-');
-    if (!acc[key]) acc[key] = curr;
-    return acc;
-  }, {});
+  const normalizedMap = raw.reduce(
+    (acc: Record<string, Connection>, curr: Connection) => {
+      const key = [curr.source_id, curr.target_id].sort().join("-");
+      if (!acc[key]) acc[key] = curr;
+      return acc;
+    },
+    {},
+  );
   return Object.values(normalizedMap) as Connection[];
 };
 
@@ -25,24 +28,86 @@ export const groupTagsBySystem = (tags: Tag[]): Record<number, Tag[]> => {
   }, {});
 };
 
-export const getJSpaceRoots = (connections: Connection[], pinnedSystems: System[] =[]) => {
-  const nodes = connections.flatMap(c =>[
-    { id: c.source_id, name: c.source_name },
-    { id: c.target_id, name: c.target_name }
-  ]).filter(sys => sys.id >= 31000000);
+export const getJSpaceRoots = (
+  connections: Connection[],
+  pinnedSystems: System[] = [],
+) => {
+  const nodes = connections
+    .flatMap((c) => [
+      { id: c.source_id, name: c.source_name },
+      { id: c.target_id, name: c.target_name },
+    ])
+    .filter((sys) => sys.id >= 31000000);
 
   const unique = new Map<number, System>();
-  nodes.forEach(n => unique.set(n.id, { id: n.id, name: n.name, is_wormhole: true, security_status: -1, is_pinned: false }));
-  
-  pinnedSystems.forEach(ps => {
-      if (ps.id >= 31000000) {
-          unique.set(ps.id, { ...unique.get(ps.id), ...ps, is_pinned: true });
-      }
+  nodes.forEach((n) =>
+    unique.set(n.id, {
+      id: n.id,
+      name: n.name,
+      is_wormhole: true,
+      security_status: -1,
+      is_pinned: false,
+    }),
+  );
+
+  pinnedSystems.forEach((ps) => {
+    if (ps.id >= 31000000) {
+      unique.set(ps.id, { ...unique.get(ps.id), ...ps, is_pinned: true });
+    }
   });
 
   return Array.from(unique.values()).sort((a, b) => {
-      if (a.is_pinned && !b.is_pinned) return -1;
-      if (!a.is_pinned && b.is_pinned) return 1;
-      return a.name.localeCompare(b.name);
+    if (a.is_pinned && !b.is_pinned) return -1;
+    if (!a.is_pinned && b.is_pinned) return 1;
+    return a.name.localeCompare(b.name);
   });
 };
+
+export function isWormholeSystem(systemID: number): boolean {
+  // Wormhole IDs start with 31000000
+  return systemID >= 31000000 && systemID < 32000000;
+}
+
+export function getHexFromSecurityStatus(securityStatus: number) {
+  if (securityStatus >= 1) {
+    return HH;
+  }
+  if (securityStatus >= 0.8) {
+    return HHM;
+  }
+  if (securityStatus >= 0.7) {
+    return HHL;
+  }
+  if (securityStatus >= 0.6) {
+    return HM;
+  }
+  if (securityStatus >= 0.5) {
+    return HL;
+  }
+  if (securityStatus >= 0.4) {
+    return LH;
+  }
+  if (securityStatus >= 0.2) {
+    return LM;
+  }
+  if (securityStatus >= 0) {
+    return LL;
+  }
+  if (securityStatus >= -0.5) {
+    return NH;
+  }
+  if (securityStatus < -0.5) {
+    return NL;
+  }
+}
+
+const HH = "#2f74e0";
+const HHM = "#3b9cee";
+const HHL = "#4ccef6";
+const HM = "#61daa6";
+const HL = "#f8ff88";
+const LH = "#e0690f";
+const LM = "#d0450c";
+const LL = "#bc1112";
+const NH = "#6e2025";
+const NL = "#8f3069";
