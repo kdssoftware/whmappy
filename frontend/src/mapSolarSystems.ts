@@ -1,3 +1,4 @@
+// frontend/src/mapSolarSystems.ts
 export type MapSolarSystems = MapSolarSystem[];
 
 export type MapSolarSystem = {

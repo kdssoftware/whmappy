@@ -18,19 +18,19 @@ export type System = {
   is_wormhole: boolean;
   security_status: number;
   is_pinned?: boolean;
-}
+};
 
 export type Connection = {
   id: string;
   source_id: number;
   target_id: number;
-  type: 'wormhole' | 'gate';
+  type: "wormhole" | "gate";
   wh_size: string;
   custom_name?: string;
   expires_at: string; // ISO String
   target_name: string;
   source_name: string;
-}
+};
 
 export interface MapNode extends System {
   connections: Connection[];
@@ -40,7 +40,7 @@ export type Tag = {
   id: number;
   system_id: number;
   tag_name: string;
-}
+};
 
 export type RouteCalculationResult = {
   shortest: {

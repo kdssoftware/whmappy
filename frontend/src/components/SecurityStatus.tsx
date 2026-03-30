@@ -1,3 +1,4 @@
+// frontend/src/components/SecurityStatus.tsx
 import { getSolarSystem } from "../mapSolarSystems";
 import { getHexFromSecurityStatus } from "../utils";
 
