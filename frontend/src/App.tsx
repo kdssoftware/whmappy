@@ -1,12 +1,6 @@
 // frontend/src/App.tsx
 import { useEffect, useState } from "react";
-import {
-  Database,
-  Filter,
-  ArrowUpDown,
-  CircleQuestionMark,
-  Wind,
-} from "lucide-react";
+import { Database, Filter, ArrowUpDown, Wind } from "lucide-react";
 import { api } from "./api";
 import {
   normalizeConnections,
