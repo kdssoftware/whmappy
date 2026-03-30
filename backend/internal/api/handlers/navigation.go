@@ -45,21 +45,11 @@ type RouteResult struct {
 
 func CalculateHubRoute(repo *database.Repository, esiClient *esi.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fromHubName := c.Query("from")
-		toHubName := c.Query("to")
+		fromID, err1 := strconv.Atoi(c.Query("from"))
+		toID, err2 := strconv.Atoi(c.Query("to"))
 
-		hubs := map[string]int{
-			"Jita":    30000142,
-			"Amarr":   30002187,
-			"Dodixie": 30002659,
-			"Hek":     30002053,
-		}
-
-		fromID, ok1 := hubs[fromHubName]
-		toID, ok2 := hubs[toHubName]
-
-		if !ok1 || !ok2 || fromID == toID {
-			return c.Status(400).JSON(fiber.Map{"error": "Invalid or identical hubs selected"})
+		if err1 != nil || err2 != nil || fromID == toID {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid or identical locations selected"})
 		}
 
 		var links []models.Connection

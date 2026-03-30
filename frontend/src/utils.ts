@@ -1,11 +1,11 @@
 // frontend/src/utils.ts
 import type { Connection, Tag, System } from "./types";
 
-export const TRADE_HUBS: Record<string, string> = {
-  Jita: "#02add1", // Jita
-  Dodixie: "#37bb5c", // Dodixie
-  Amarr: "#e7b817", // Amarr
-  Hek: "#fe3743", // Hek
+export const TRADE_HUBS: Record<string, { id: number; color: string }> = {
+  Jita: { id: 30000142, color: "#02add1" },
+  Dodixie: { id: 30002659, color: "#37bb5c" },
+  Amarr: { id: 30002187, color: "#e7b817" },
+  Hek: { id: 30002053, color: "#fe3743" },
 };
 
 export const normalizeConnections = (raw: Connection[]): Connection[] => {
@@ -56,11 +56,7 @@ export const getJSpaceRoots = (
     }
   });
 
-  return Array.from(unique.values()).sort((a, b) => {
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  return Array.from(unique.values());
 };
 
 export function isWormholeSystem(systemID: number): boolean {
@@ -68,37 +64,46 @@ export function isWormholeSystem(systemID: number): boolean {
   return systemID >= 31000000 && systemID < 32000000;
 }
 
+export function getKSpaceExits(
+  startId: number,
+  connections: Connection[],
+): number[] {
+  const exits: number[] = [];
+  const queue = [startId];
+  const visited = new Set<number>([startId]);
+
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    if (curr < 31000000 && curr !== startId) {
+      exits.push(curr);
+      continue;
+    }
+
+    const neighbors = connections
+      .filter((c) => c.source_id === curr || c.target_id === curr)
+      .map((c) => (c.source_id === curr ? c.target_id : c.source_id));
+
+    for (const n of neighbors) {
+      if (!visited.has(n)) {
+        visited.add(n);
+        queue.push(n);
+      }
+    }
+  }
+  return exits;
+}
+
 export function getHexFromSecurityStatus(securityStatus: number) {
-  if (securityStatus >= 1) {
-    return HH;
-  }
-  if (securityStatus >= 0.8) {
-    return HHM;
-  }
-  if (securityStatus >= 0.7) {
-    return HHL;
-  }
-  if (securityStatus >= 0.6) {
-    return HM;
-  }
-  if (securityStatus >= 0.5) {
-    return HL;
-  }
-  if (securityStatus >= 0.4) {
-    return LH;
-  }
-  if (securityStatus >= 0.2) {
-    return LM;
-  }
-  if (securityStatus >= 0) {
-    return LL;
-  }
-  if (securityStatus >= -0.5) {
-    return NH;
-  }
-  if (securityStatus < -0.5) {
-    return NL;
-  }
+  if (securityStatus >= 1) return HH;
+  if (securityStatus >= 0.8) return HHM;
+  if (securityStatus >= 0.7) return HHL;
+  if (securityStatus >= 0.6) return HM;
+  if (securityStatus >= 0.5) return HL;
+  if (securityStatus >= 0.4) return LH;
+  if (securityStatus >= 0.2) return LM;
+  if (securityStatus >= 0) return LL;
+  if (securityStatus >= -0.5) return NH;
+  if (securityStatus < -0.5) return NL;
 }
 
 const HH = "#2f74e0";

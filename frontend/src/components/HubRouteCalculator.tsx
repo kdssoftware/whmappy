@@ -1,16 +1,27 @@
 //frontend/src/components/HubRouteCalculator.tsx
-
 import React, { useState } from "react";
 import { Map, ArrowRight, ShieldCheck, Zap, ArrowDownUp } from "lucide-react";
 import { api } from "../api";
 import { TRADE_HUBS } from "../utils";
-import type { RouteCalculationResult } from "../types";
+import type { RouteCalculationResult, EveUser } from "../types";
 
-export const HubRouteCalculator: React.FC = () => {
-  const [fromHub, setFromHub] = useState("Jita");
-  const [toHub, setToHub] = useState("Amarr");
+interface Props {
+  user: EveUser;
+}
+
+export const HubRouteCalculator: React.FC<Props> = ({ user }) => {
+  const [fromHub, setFromHub] = useState<number>(TRADE_HUBS["Jita"].id);
+  const [toHub, setToHub] = useState<number>(TRADE_HUBS["Amarr"].id);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RouteCalculationResult | null>(null);
+
+  const hubOptions = Object.entries(TRADE_HUBS).map(([name, info]) => ({
+    name,
+    id: info.id,
+  }));
+  if (user?.last_location_id) {
+    hubOptions.push({ name: "Current Location", id: user.last_location_id });
+  }
 
   const handleSwap = () => {
     setFromHub(toHub);
@@ -18,7 +29,8 @@ export const HubRouteCalculator: React.FC = () => {
   };
 
   const handleCalculate = async () => {
-    if (fromHub === toHub) return alert("Please select two distinct hubs.");
+    if (fromHub === toHub)
+      return alert("Please select two distinct locations.");
     setLoading(true);
     try {
       const res = await api.routes.calc(fromHub, toHub);
@@ -45,12 +57,12 @@ export const HubRouteCalculator: React.FC = () => {
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6 relative z-10">
         <select
           value={fromHub}
-          onChange={(e) => setFromHub(e.target.value)}
+          onChange={(e) => setFromHub(Number(e.target.value))}
           className="bg-slate-900 border border-slate-700 text-slate-200 p-2.5 rounded-lg w-full md:w-56 outline-none focus:border-sky-500 transition-colors"
         >
-          {Object.keys(TRADE_HUBS).map((h) => (
-            <option key={h} value={h}>
-              {h}
+          {hubOptions.map((opt) => (
+            <option key={opt.id + "from"} value={opt.id}>
+              {opt.name}
             </option>
           ))}
         </select>
@@ -67,12 +79,12 @@ export const HubRouteCalculator: React.FC = () => {
 
         <select
           value={toHub}
-          onChange={(e) => setToHub(e.target.value)}
+          onChange={(e) => setToHub(Number(e.target.value))}
           className="bg-slate-900 border border-slate-700 text-slate-200 p-2.5 rounded-lg w-full md:w-56 outline-none focus:border-sky-500 transition-colors"
         >
-          {Object.keys(TRADE_HUBS).map((h) => (
-            <option key={h} value={h}>
-              {h}
+          {hubOptions.map((opt) => (
+            <option key={opt.id + "to"} value={opt.id}>
+              {opt.name}
             </option>
           ))}
         </select>

@@ -1,5 +1,4 @@
 // frontend/src/components/HubRouteList.tsx
-
 import React from "react";
 import { ShieldCheck, Zap } from "lucide-react";
 import { TRADE_HUBS } from "../utils";
@@ -20,7 +19,9 @@ export const HubRouteList: React.FC<Props> = ({ routes }) => {
           <div
             key={route.hub_name}
             className="bg-slate-900/80 border border-slate-800 p-3 rounded-lg min-w-[120px] flex flex-col border-b-2 shadow-inner"
-            style={{ borderBottomColor: TRADE_HUBS[route.hub_name] }}
+            style={{
+              borderBottomColor: TRADE_HUBS[route.hub_name]?.color || "#ffffff",
+            }}
           >
             <span className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-2 border-b border-slate-800 pb-1">
               {route.hub_name}

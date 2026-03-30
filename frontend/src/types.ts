@@ -2,6 +2,7 @@
 export interface EveUser {
   id: number;
   name: string;
+  last_location_id?: number;
 }
 
 export interface HubRoute {
@@ -27,6 +28,8 @@ export type Connection = {
   type: "wormhole" | "gate";
   wh_size: string;
   custom_name?: string;
+  created_at: string;
+  created_by?: number;
   expires_at: string; // ISO String
   target_name: string;
   source_name: string;

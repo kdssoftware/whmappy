@@ -1,5 +1,4 @@
 //frontend/src/api.ts
-
 import axios from "axios";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777";
@@ -20,6 +19,10 @@ export const api = {
   },
   map: {
     getAll: () => axios.get(`${BACKEND_URL}/api/map/all`),
+  },
+  routes: {
+    calc: (from: number, to: number) =>
+      axios.get(`${BACKEND_URL}/api/routes/calc?from=${from}&to=${to}`),
   },
   systems: {
     pin: (id: number) => axios.post(`${BACKEND_URL}/api/systems/${id}/pin`),

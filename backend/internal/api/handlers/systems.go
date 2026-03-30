@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"strconv"
 	"time"
 	"wh2/internal/database"
 	"wh2/internal/esi"
@@ -36,6 +37,17 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
                   JOIN systems s2 ON c.target_system_id = s2.id`
 		repo.DB.Select(&links, query)
 
+		// Include user's current location dynamically based on session
+		sessionID := c.Cookies("session_id")
+		var userLoc *int
+		if sessionID != "" {
+			if charID, err := strconv.Atoi(sessionID); err == nil {
+				if char, err := repo.GetCharacter(charID); err == nil && char.LastLocation != nil {
+					userLoc = char.LastLocation
+				}
+			}
+		}
+
 		jRoots := make(map[int]string)
 		for _, l := range links {
 			if l.SourceSystemID >= 31000000 {
@@ -55,6 +67,11 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 
 		results := make(map[int][]HubRoute)
 		hubs := map[string]int{"Jita": Jita, "Amarr": Amarr, "Dodixie": Dodixie, "Hek": Hek}
+
+		// Inject user's current location
+		if userLoc != nil {
+			hubs["Current Location"] = *userLoc
+		}
 
 		for rootID := range jRoots {
 			exits := findExits(rootID, links)
