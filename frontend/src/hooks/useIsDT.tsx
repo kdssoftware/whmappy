@@ -16,5 +16,5 @@ export function isDT() {
   const now = new Date();
   const hour = now.getUTCHours();
   const minute = now.getUTCMinutes();
-  return hour === 11 && minute <= 0 && minute >= 15;
+  return hour === 11 && minute > 0 && minute < 15;
 }
