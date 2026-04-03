@@ -61,7 +61,7 @@ func withCache[T any](c *Client, cacheKey string, fetch func() (T, error)) (T, e
 	}
 
 	if cachedBytes, err := json.Marshal(cr); err == nil {
-		c.RedisClient.Set(ctx, cacheKey, cachedBytes, 5*time.Minute)
+		c.RedisClient.Set(ctx, cacheKey, cachedBytes, 1*time.Minute)
 	}
 
 	return val, fetchErr

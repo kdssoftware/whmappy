@@ -153,6 +153,9 @@ func GetCurrentUsers(repo *database.Repository) fiber.Handler {
 			if err != nil {
 				return c.JSON([]interface{}{})
 			}
+			if len(chars) == 0 {
+				return c.JSON([]interface{}{})
+			}
 			return c.JSON([]models.Character{chars[0]})
 
 		}

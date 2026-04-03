@@ -1,8 +1,20 @@
 //frontend/src/api.ts
 import axios from "axios";
+import { isDT } from "./hooks/useIsDT";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:7777";
 axios.defaults.withCredentials = true;
+axios.interceptors.request.use(
+  (config) => {
+    if (isDT()) {
+      throw new axios.Cancel("DT");
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 
 export const api = {
   auth: {

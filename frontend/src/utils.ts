@@ -94,25 +94,63 @@ export function getKSpaceExits(
 }
 
 export function getHexFromSecurityStatus(securityStatus: number) {
-  if (securityStatus >= 1) return HH;
-  if (securityStatus >= 0.8) return HHM;
-  if (securityStatus >= 0.7) return HHL;
-  if (securityStatus >= 0.6) return HM;
-  if (securityStatus >= 0.5) return HL;
-  if (securityStatus >= 0.4) return LH;
-  if (securityStatus >= 0.2) return LM;
-  if (securityStatus >= 0) return LL;
-  if (securityStatus >= -0.5) return NH;
-  if (securityStatus < -0.5) return NL;
+  switch (Number(securityStatus.toFixed(1))) {
+    case 1:
+      return color["Crayola Blue"];
+    case 0.9:
+      return color["Blue Bell"];
+    case 0.8:
+      return color["Blue Bell"];
+    case 0.7:
+      return color["Sky Aqua"];
+    case 0.6:
+      return color["Emerald"];
+    case 0.5:
+      return color["Lime Cream"];
+    case 0.4:
+      return color["Autumn Leaf"];
+    case 0.3:
+      return color["Spicy Orange"];
+    case 0.2:
+      return color["Spicy Orange"];
+    case 0.1:
+      return color["Brick Ember"];
+    case 0:
+      return color["Brick Ember"];
+    case -0.2:
+      return color["Wine Plum"];
+    case -0.3:
+      return color["Wine Plum"];
+    case -0.4:
+      return color["Wine Plum"];
+    case -0.5:
+      return color["Wine Plum"];
+    case -0.6:
+      return color["Berry Blush"];
+    case -0.7:
+      return color["Berry Blush"];
+    case -0.8:
+      return color["Berry Blush"];
+    case -0.9:
+      return color["Berry Blush"];
+    case -1:
+      return color["Berry Blush"];
+  }
 }
 
-const HH = "#2f74e0";
-const HHM = "#3b9cee";
-const HHL = "#4ccef6";
-const HM = "#61daa6";
-const HL = "#f8ff88";
-const LH = "#e0690f";
-const LM = "#d0450c";
-const LL = "#bc1112";
-const NH = "#6e2025";
-const NL = "#8f3069";
+// https://coolors.co/2f74e0-3b9cee-4ccef6-61daa6-f8ff88-e0690f-d0450c-bc1112-6e2025-8f3069
+const color = {
+  "Crayola Blue": "#2f74e0",
+  "Blue Bell": "#3b9cee",
+  "Sky Aqua": "#4ccef6",
+  Emerald: "#61DAA6",
+  "Lime Cream": "#F8FF88",
+  "Autumn Leaf": "#E0690F",
+  "Spicy Orange": "#D0450C",
+  "Brick Ember": "#BC1112",
+  "Wine Plum": "#6E2025",
+  "Berry Blush": "#8F3069",
+};
+
+export const sleep = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));

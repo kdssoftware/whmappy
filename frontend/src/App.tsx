@@ -7,6 +7,7 @@ import {
   groupTagsBySystem,
   getJSpaceRoots,
   getKSpaceExits,
+  sleep,
 } from "./utils";
 import { getSolarSystem } from "./mapSolarSystems";
 import { Header } from "./components/Header";
@@ -16,10 +17,12 @@ import type { Connection, Tag, HubRoute, EveUser, System } from "./types";
 
 import anoikDataRaw from "./anoik.json";
 import type { Anoik } from "./anoik";
+import { useIsDT } from "./hooks/useIsDT";
 
 const anoikData = anoikDataRaw as unknown as Anoik;
 
 function App() {
+  const isDT = useIsDT();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [hubRoutes, setHubRoutes] = useState<Record<number, HubRoute[]>>({});
   const [tags, setTags] = useState<Record<number, Tag[]>>({});
@@ -37,6 +40,7 @@ function App() {
       const [mapRes, tagsRes] = await Promise.all([
         api.map.getAll(),
         api.tags.getAll().catch(() => ({ data: [] })),
+        sleep(523), // ensure at least 1 spinning rotation
       ]);
 
       const raw: Connection[] = mapRes.data.connections || [];
@@ -128,7 +132,7 @@ function App() {
       () => {
         fetchData();
       },
-      3 * 60 * 1000,
+      30 * 1_000, // sync every 30 minute
     );
 
     return () => clearInterval(interval);
@@ -158,11 +162,12 @@ function App() {
     });
   }
 
-  // Apply Sorting
   displayedRoots.sort((a, b) => {
-    // Pinned always on top
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
+    // Pinned items stay pinned to the top, when sortBy is "new" or "old" only
+    if (sortBy === "new" || sortBy === "old") {
+      if (a.is_pinned && !b.is_pinned) return -1;
+      if (!a.is_pinned && b.is_pinned) return 1;
+    }
 
     if (sortBy === "new" || sortBy === "old") {
       const getLatest = (id: number) => {
@@ -288,7 +293,7 @@ function App() {
               );
             })}
           </div>
-        ) : !user ? (
+        ) : !user && !isDT ? (
           <div className="text-center py-24 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center gap-4 text-slate-600">
             <Database size={48} className="opacity-20" />
             <p className="font-mono uppercase tracking-widest text-sm">
@@ -299,9 +304,11 @@ function App() {
           <div className="text-center py-12 border-2 border-dashed border-red-800 rounded-2xl flex flex-col items-center gap-4 text-red-600">
             <Wind size={48} className="opacity-20" />
             <p className="font-mono uppercase tracking-widest text-sm">
-              {filterBy !== "all"
-                ? `No ${filterBy} wormhole found`
-                : "No wormhole found in system"}
+              {isDT
+                ? "EVE Online - Downtime"
+                : filterBy !== "all"
+                  ? `No ${filterBy} wormhole found`
+                  : "No wormhole found in system"}
             </p>
           </div>
         )}

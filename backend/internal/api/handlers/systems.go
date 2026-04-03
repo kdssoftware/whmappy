@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"os"
 	"strconv"
 	"time"
 	"wh2/internal/database"
@@ -46,6 +47,17 @@ func GetAllConnections(repo *database.Repository, esiClient *esi.Client) fiber.H
 					userLoc = char.LastLocation
 				}
 			}
+		}
+		if os.Getenv("ENVIRONMENT") == "local" {
+			chars, err := repo.GetAllActiveCharacters()
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+			}
+			if len(chars) == 0 {
+				return c.Status(500).JSON("error: no characters in the database. Seed the database.")
+
+			}
+			userLoc = chars[0].LastLocation
 		}
 
 		jRoots := make(map[int]string)
