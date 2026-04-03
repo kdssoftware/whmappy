@@ -1,6 +1,5 @@
 // frontend/src/components/HubRouteList.tsx
 import React from "react";
-import { ShieldCheck, Zap } from "lucide-react";
 import { TRADE_HUBS } from "../utils";
 import type { HubRoute } from "../types";
 
