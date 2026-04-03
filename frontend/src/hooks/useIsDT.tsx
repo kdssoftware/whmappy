@@ -7,7 +7,7 @@ export function useIsDT() {
   const minute = now.getUTCMinutes();
 
   return useMemo(() => {
-    return hour === 11 && minute <= 0 && minute >= 15;
+    return hour === 11 && minute > 0 && minute < 15;
   }, [hour, minute]);
 }
 
